@@ -2260,7 +2260,7 @@ $('bilingBtn').addEventListener('click', async ()=>{
 });
 
 /* =========================================================================
-   MODULE 5: MULTI-TEMPLATE NAQAEE CONVERTER (CLEAN & DYNAMIC - NO HARDCODING)
+   MODULE 5: MULTI-TEMPLATE NAQAEE CONVERTER (ROBUST MULTI-FORMAT EXTRACTION)
    ========================================================================= */
 let naqaeeDocxFile = null;
 const naqaeeLogEl = $('naqaeeLog');
@@ -2296,73 +2296,125 @@ $('naqaeeDocxClear').addEventListener('click', (e)=>{
 });
 wireDragDrop('dropNaqaeeDocx', handleNaqaeeFile);
 
-/**
- * Detects whether the uploaded MMR document is:
- * - 'TEMPLATE_14': Legacy format (Template 14 / colon-delimited tables / Total grades format)
- * - 'STANDARD_MMR': Modern standard MMR format (numbered section headers / pair tables)
- */
-function detectMmrTemplateFormat(paras, tables){
-  const allText = paras.join(' ') + ' ' + tables.flat(2).join(' ');
-  const isT14 = /Template\s*14/i.test(allText) ||
-                (/Instructor\s*Name\(s\)\s*:/i.test(allText) && /Assist\.\s*Name\(s\)\s*:/i.test(allText)) ||
-                (/Total\s*grades/i.test(allText) && /\(A\):/i.test(allText)) ||
-                /Course\s*Work\s*Performance\s*\(\d+%\)/i.test(allText) ||
-                /Module\s*Final\s*Results\s*\(100%\)/i.test(allText);
-  return isT14 ? 'TEMPLATE_14' : 'STANDARD_MMR';
+function cleanVal(s){
+  if (!s) return '';
+  return String(s).replace(/\s+/g, ' ').trim();
+}
+
+function cleanDigits(s){
+  if (!s) return '';
+  let str = String(s);
+  str = str.replace(/(\d)\s+(\d)/g, '$1$2');
+  str = str.replace(/(\d)\s+(\d)/g, '$1$2');
+  return str.trim();
 }
 
 /**
- * Dedicated parser for Template 14 legacy MMR Word documents
+ * Universal extractor for Template 14 & Standard MMR formats
  */
-function parseTemplate14MmrDocx(paras, tables){
+function parseUniversalMmrDocx(paras, tables){
   const allText = paras.join('\n') + '\n' + tables.map(t=>t.map(r=>r.join('\t')).join('\n')).join('\n');
 
-  let dept = 'MSE', sem = '', program = 'MSE', nStudents = '';
+  let dept = 'MSE', sem = '', program = 'MSE', nStudents = 0;
   let moduleTitle = '', moduleCode = '';
   let instructor = '', assistants = '';
   let contactStr = '';
 
-  // Colon-separated info extractions
-  const mDept = allText.match(/Department\s*:\s*([^\t\n\r]+)/i);
-  const mSem = allText.match(/Semester\s*:\s*([^\t\n\r]+)/i);
-  const mProg = allText.match(/Program\(s\)\s*:\s*([^\t\n\r]+)/i);
-  const mN = allText.match(/No\.\s*of\s*Students\s*:\s*(\d+)/i);
-  const mTitle = allText.match(/Module\s*Title\s*:\s*([^\t\n\r]+)/i);
-  const mCode = allText.match(/Module\s*Code\s*:\s*([^\t\n\r]+)/i);
-  const mInst = allText.match(/Instructor\s*Name\(s\)\s*:\s*([^\t\n\r]+)/i);
-  const mAsst = allText.match(/Assist\.\s*Name\(s\)\s*:\s*([^\t\n\r]+)/i);
+  if (tables && tables.length > 0){
+    const t0 = tables[0];
 
-  if (mDept && mDept[1].trim()) dept = mDept[1].trim();
-  if (mSem && mSem[1].trim()) sem = mSem[1].trim();
-  if (mProg && mProg[1].trim()) program = mProg[1].trim();
-  if (mN && mN[1].trim()) nStudents = mN[1].trim();
-  if (mTitle && mTitle[1].trim()) moduleTitle = mTitle[1].trim();
-  if (mCode && mCode[1].trim()) moduleCode = mCode[1].trim();
-  if (mInst && mInst[1].trim()) instructor = mInst[1].trim();
-  if (mAsst && mAsst[1].trim()) assistants = mAsst[1].trim();
+    // Check Format A: 3-cell aligned block in row 0
+    if (t0.length >= 1 && t0[0].length >= 3 && /Program/i.test(t0[0][0]) && /Module Title/i.test(t0[0][0])){
+      const c0Lines = t0[0][0].split('\n').map(l=>l.trim()).filter(Boolean);
+      const c1Lines = t0[0][1].split('\n').map(l=>l.replace(/^:\s*/,'').trim()).filter(Boolean);
+      const c2Lines = t0[0][2].split('\n').map(l=>l.trim()).filter(Boolean);
 
-  // Contact hours table scan
-  tables.forEach(t=>{
-    t.forEach(r=>{
-      const rowStr = r.join(' ');
-      if (/Contact Hours/i.test(rowStr) || (/Lectures/i.test(rowStr) && /Tutorial/i.test(rowStr))){
-        const mLec = rowStr.match(/Lectures\s*[:\-]?\s*([\d\.]+)/i);
-        const mTut = rowStr.match(/Tutorial\s*[:\-]?\s*([\d\.\-]+)/i);
-        const mPrac = rowStr.match(/Practical\s*[:\-]?\s*([\d\.\-]+)/i);
-        const mOth = rowStr.match(/Others\s*[:\-]?\s*([\d\.\-]+)/i);
+      if (c1Lines.length >= 1) program = cleanVal(c1Lines[0]);
+      if (c1Lines.length >= 2) moduleTitle = cleanVal(c1Lines[1]);
+      if (c1Lines.length >= 3) instructor = cleanVal(c1Lines[2]);
+
+      c2Lines.forEach(line=>{
+        if (/Semester\s*:/i.test(line)){
+          sem = cleanVal(line.replace(/^Semester\s*:\s*/i, ''));
+        } else if (/Module\s*Code\s*:/i.test(line)){
+          moduleCode = cleanVal(line.replace(/^Module\s*Code\s*:\s*/i, ''));
+        } else if (/No\.?\s*of\s*Students\s*:/i.test(line)){
+          const val = cleanDigits(line.replace(/^No\.?\s*of\s*Students\s*:\s*/i, ''));
+          const mD = val.match(/(\d+)/);
+          if (mD) nStudents = parseInt(mD[1], 10);
+        } else if (/Asst\.?\s*Name(?:\(\s*s\s*\))?\s*:/i.test(line) || /Assist\.?\s*Name(?:\(\s*s\s*\))?\s*:/i.test(line)){
+          assistants = cleanVal(line.replace(/^Ass(?:is)?t\.?\s*Name(?:\(\s*s\s*\))?\s*:\s*/i, ''));
+        }
+      });
+    }
+    // Check Format B: Key-Value cells
+    else {
+      t0.forEach(r=>{
+        r.forEach((cell, i)=>{
+          const cellClean = cleanVal(cell);
+          function getV(cText, nextC){
+            if (cText.includes(':')){
+              const v = cText.split(':', 2)[1].trim();
+              if (v) return v;
+            }
+            return nextC ? nextC.trim() : '';
+          }
+          const nextCell = (i+1 < r.length) ? r[i+1] : '';
+
+          if (/Department/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) dept = cleanVal(v);
+          } else if (/Semester/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) sem = cleanVal(v);
+          } else if (/Program/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) program = cleanVal(v);
+          } else if (/No\.?\s*of\s*Students/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            const valD = cleanDigits(v);
+            const mD = valD.match(/(\d+)/);
+            if (mD) nStudents = parseInt(mD[1], 10);
+          } else if (/Module\s*Title/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) moduleTitle = cleanVal(v);
+          } else if (/Module\s*Code/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) moduleCode = cleanVal(v);
+          } else if (/Instructor\s*Name/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) instructor = cleanVal(v);
+          } else if (/Assist\.?\s*Name|Asst\.?\s*Name/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) assistants = cleanVal(v);
+          }
+        });
+      });
+    }
+
+    // Contact hours scan
+    t0.forEach(r=>{
+      const rStr = r.join(' ');
+      if (/contact hours/i.test(rStr) || (/lecture/i.test(rStr) && /tutorial/i.test(rStr))){
+        const mLec = cleanDigits(rStr).match(/Lecture[s:]*?\s*[:\-]?\s*([\d\.]+)/i);
+        const mTut = cleanDigits(rStr).match(/Tutorial[s:]*?\s*[:\-]?\s*([\d\.\-]+)/i);
+        const mPrac = cleanDigits(rStr).match(/Practical[s:]*?\s*[:\-]?\s*([\d\.\-]+)/i);
+        const mOth = cleanDigits(rStr).match(/Other[s:]*?\s*[:\-]?\s*([\d\.\-]+)/i);
         if (mLec || mTut){
           contactStr = `Lectures: ${mLec?mLec[1]:'-'}    Tutorial: ${mTut?mTut[1]:'-'}    Practical: ${mPrac?mPrac[1]:'-'}    Others: ${mOth?mOth[1]:'-'}`;
         }
       }
     });
-  });
+  }
 
+  // Academic year & Semester formatting
   const mYr = (sem || '').match(/(20\d\d)/);
-  const yr = mYr ? parseInt(mYr[1],10) : 2026;
-  const isSpring = /spring|second/i.test(sem);
+  const yr = mYr ? parseInt(mYr[1], 10) : 2026;
+  const isSpring = /spring|second|ربيع/i.test(sem);
   const acadYr = isSpring ? `${yr-1} / ${yr}` : `${yr} / ${yr+1}`;
   const approvalDate = `End of Semester Council Meeting (${isSpring ? 'June' : 'January'} ${yr})`;
 
+  // Level determination
   const mLevel = (moduleCode || '').match(/(\d)/);
   const levelDigit = mLevel ? mLevel[1] : '4';
   const levelNames = {
@@ -2374,11 +2426,11 @@ function parseTemplate14MmrDocx(paras, tables){
   };
   const levelStr = levelNames[levelDigit] || `Level ${levelDigit}`;
 
-  // Syllabus / Content taught
+  // Content taught
   let contentTaught = '';
   for (let i=0; i<paras.length; i++){
     if (/Course Content Taught:/i.test(paras[i])){
-      contentTaught = paras[i].replace(/^Course Content Taught:\s*/i,'').trim();
+      contentTaught = paras[i].replace(/^Course Content Taught:\s*/i, '').trim();
       if (!contentTaught && i+1 < paras.length) contentTaught = paras[i+1].trim();
       break;
     } else if (/^Syllabus:/i.test(paras[i])){
@@ -2387,7 +2439,7 @@ function parseTemplate14MmrDocx(paras, tables){
     }
   }
 
-  function findT14Comment(pattern){
+  function findComment(pattern){
     for (let i=0; i<paras.length; i++){
       if (pattern.test(paras[i])){
         let c = paras[i].replace(pattern, '').trim();
@@ -2400,11 +2452,11 @@ function parseTemplate14MmrDocx(paras, tables){
     return '';
   }
 
-  const cwComment = findT14Comment(/Comments? on Students’? Course Work Performance:?/i);
-  const mtComment = findT14Comment(/Comments? on Results of the Midterm Exam:?/i);
-  const fnComment = findT14Comment(/Comments? on Results of the Final Exam:?/i);
-  const modComment = findT14Comment(/Comments? on the Final Results:?/i);
-  const loComment = findT14Comment(/Comments? on the LO achievements:?/i);
+  const cwComment = findComment(/Comments? on Students’? Course Work Performance:?|Comment on Coursework Results:?/i);
+  const mtComment = findComment(/Comments? on Results of the Midterm Exam:?|Comment on Midterm Results:?/i);
+  const fnComment = findComment(/Comments? on Results of the Final Exam:?|Comment on Final Exam Results:?/i);
+  const modComment = findComment(/Comments? on the Final Results:?|Comments? on Module Results:?|Comments? on Module Final Results:?/i);
+  const loComment = findComment(/Comments? on the LO achievements:?|Comment on LOs Achievements:?/i);
 
   // Student feedback comments
   let feedbackSatText = '';
@@ -2415,47 +2467,88 @@ function parseTemplate14MmrDocx(paras, tables){
     }
   }
 
-  // Grade breakdown & Actions
-  const gradeRows = [];
+  // --- GRADE EXTRACTION ENGINE ---
+  const gradeMap = {};
   const prevActions = [];
   const newActions = [];
-  let wCount = 0;
   let fCount = 0;
+  let wCount = 0;
 
   tables.forEach(t=>{
-    // Total grades table
+    // 1. Total grades table (Template 14 / Legacy)
     if (t.length > 1 && t[0].some(cell=> /total grades/i.test(cell))){
+      let rowIdx = 0;
       for (let r=1; r<t.length; r++){
-        if (t[r].length >= 2){
-          const lbl = t[r][0].trim();
-          const count = t[r][1].trim();
-          const pct = t[r][2] ? t[r][2].trim() : '';
-          const mGrade = lbl.match(/\(([A-DFa-df])\)/);
-          if (mGrade){
-            const gr = mGrade[1].toUpperCase();
-            gradeRows.push({grade: gr, count, pct});
-            if (gr === 'F') fCount = parseInt(count, 10) || 0;
-          } else if (/^W[:\s]?/i.test(lbl) || /\(W\)/i.test(lbl)){
-            wCount = parseInt(count, 10) || 0;
-            gradeRows.push({grade: 'W', count, pct});
-          } else if (/^[A-DF]$/i.test(lbl)){
-            const gr = lbl.toUpperCase();
-            gradeRows.push({grade: gr, count, pct});
-            if (gr === 'F') fCount = parseInt(count, 10) || 0;
+        const rowStr = t[r].join(' ');
+        if (/comment/i.test(rowStr) || t[r].length < 2) continue;
+        rowIdx++;
+        const lbl = cleanVal(t[r][0]);
+        const cntStr = cleanDigits(t[r][1]).replace(/\s+/g, '');
+        const pctStr = t[r][2] ? cleanDigits(t[r][2]).replace(/\s+/g, '') : '';
+
+        let gr = null;
+        const mG = lbl.match(/\(\s*([A-DFWa-dfw])\s*\)/);
+        if (mG){
+          gr = mG[1].toUpperCase();
+        } else if (/^[A-DFWa-dfw]$/.test(lbl)){
+          gr = lbl.toUpperCase();
+        } else if (/^([A-DFWa-dfw])\s*:/.test(lbl)){
+          gr = lbl.match(/^([A-DFWa-dfw])\s*:/)[1].toUpperCase();
+        } else if (!lbl){
+          // Positional fallback for empty cell 0:
+          // Row 1 -> A, Row 2 -> B, Row 3 -> C, Row 4 -> D, Row 5 -> F, Row 6 -> W
+          const stdOrder = ['A', 'B', 'C', 'D', 'F', 'W'];
+          if (rowIdx <= stdOrder.length) gr = stdOrder[rowIdx - 1];
+        }
+
+        if (gr && /^\d+$/.test(cntStr)){
+          const cnt = parseInt(cntStr, 10);
+          gradeMap[gr] = {count: cnt, pct: pctStr};
+          if (gr === 'F') fCount = cnt;
+          if (gr === 'W') wCount = cnt;
+        }
+      }
+    }
+
+    // 2. Standard 3-column Grade table (Modern MMR: Grade | # | %)
+    else if (t.length > 1 && t[0].length === 3 && /^Grade$/i.test(cleanVal(t[0][0]))){
+      for (let r=1; r<t.length; r++){
+        if (t[r][0] !== 'Total' && t[r].length >= 2){
+          const gr = cleanVal(t[r][0]).toUpperCase();
+          const cntStr = cleanDigits(t[r][1]).replace(/\s+/g, '');
+          const pctStr = t[r][2] ? cleanDigits(t[r][2]).replace(/\s+/g, '') : '';
+          if (/^\d+$/.test(cntStr)){
+            const cnt = parseInt(cntStr, 10);
+            gradeMap[gr] = {count: cnt, pct: pctStr};
+            if (gr === 'F') fCount = cnt;
+            if (gr === 'W') wCount = cnt;
           }
         }
       }
     }
-    // Previous action plan
-    else if (t.length > 1 && t[0].length >= 3 && t[0].some(c=> /area/i.test(c)) && t[0].some(c=> /required/i.test(c))){
+
+    // 3. Scan exam attendance tables for Withdrawn if not in grades table
+    t.forEach(r=>{
+      const rStr = r.join(' ');
+      if (/withdrawn/i.test(rStr)){
+        const mW = cleanDigits(rStr).match(/Withdrawn\s*[:\t\-]?\s*(\d+)/i);
+        if (mW && wCount === 0){
+          wCount = parseInt(mW[1], 10);
+        }
+      }
+    });
+
+    // 4. Previous action plan table
+    if (t.length > 1 && t[0].length >= 3 && t[0].some(c=> /area/i.test(c)) && t[0].some(c=> /required/i.test(c))){
       for (let r=1; r<t.length; r++){
         if (t[r].length >= 3 && t[r][0].trim()){
           prevActions.push({area: t[r][0].trim(), action: t[r][1].trim(), impl: t[r][2].trim()});
         }
       }
     }
-    // New action plan
-    else if (t.length > 1 && t[0].length >= 4 && t[0].some(c=> /area/i.test(c)) && t[0].some(c=> /responsible/i.test(c))){
+
+    // 5. New action plan table
+    if (t.length > 1 && t[0].length >= 4 && t[0].some(c=> /area/i.test(c)) && t[0].some(c=> /responsible/i.test(c))){
       for (let r=1; r<t.length; r++){
         if (t[r].length >= 4 && t[r][0].trim()){
           newActions.push({area: t[r][0].trim(), desc: t[r][1].trim(), duration: t[r][2].trim(), resp: t[r][3].trim()});
@@ -2464,6 +2557,17 @@ function parseTemplate14MmrDocx(paras, tables){
     }
   });
 
+  // Calculate sum of extracted grades
+  const rawA = (gradeMap['A'] || {}).count || 0;
+  const rawB = (gradeMap['B'] || {}).count || 0;
+  const rawC = (gradeMap['C'] || {}).count || 0;
+  const rawD = (gradeMap['D'] || {}).count || 0;
+  const sumGrades = rawA + rawB + rawC + rawD + fCount + wCount;
+
+  if (nStudents === 0 || nStudents < sumGrades){
+    nStudents = sumGrades;
+  }
+
   let deptHead = '';
   const mLead = allText.match(/Program leader comments:\s*([^\n\r]+)/i);
   if (mLead && mLead[1].trim()) deptHead = mLead[1].trim();
@@ -2471,148 +2575,12 @@ function parseTemplate14MmrDocx(paras, tables){
   if (mHead && mHead[1].trim()) deptHead = mHead[1].trim();
 
   return {
-    templateType: 'TEMPLATE_14',
-    dept, sem, program, nStudents, moduleTitle, moduleCode, instructor, assistants,
+    templateType: 'UNIVERSAL_MMR',
+    dept, sem, program, nStudents: String(nStudents), moduleTitle, moduleCode, instructor, assistants,
     contactStr, acadYr, approvalDate, levelStr, contentTaught, mtComment, cwComment,
     fnComment, loComment, modComment, satisfactionRate: '', participationRate: '',
-    feedbackSatText, feedbackDissatText, prevActions, newActions, gradeRows, deptHead,
+    feedbackSatText, feedbackDissatText, prevActions, newActions, gradeMap, deptHead,
     wCount, fCount
-  };
-}
-
-/**
- * Dedicated parser for Standard Modern MMR Word documents
- */
-function parseStandardMmrDocx(paras, tables){
-  let dept = 'MSE', sem = '', program = 'MSE', nStudents = '';
-  let moduleTitle = '', moduleCode = '';
-  let instructor = '', assistants = '';
-  let contactStr = '';
-
-  if (tables.length > 0){
-    const infoTbl = tables[0];
-    infoTbl.forEach(row=>{
-      row.forEach((cell, i)=>{
-        if (/Department/i.test(cell) && i+1 < row.length && row[i+1]) dept = row[i+1].trim();
-        if (/Semester/i.test(cell) && i+1 < row.length && row[i+1]) sem = row[i+1].trim();
-        if (/Program/i.test(cell) && i+1 < row.length && row[i+1]) program = row[i+1].trim();
-        if (/No\.? of Students/i.test(cell) && i+1 < row.length && row[i+1]) nStudents = row[i+1].trim();
-        if (/Module Title/i.test(cell) && i+1 < row.length && row[i+1]) moduleTitle = row[i+1].trim();
-        if (/Module Code/i.test(cell) && i+1 < row.length && row[i+1]) moduleCode = row[i+1].trim();
-        if (/Instructor/i.test(cell) && i+1 < row.length && row[i+1]) instructor = row[i+1].trim();
-        if (/Assist/i.test(cell) && i+1 < row.length && row[i+1]) assistants = row[i+1].trim();
-        if (/Contact Hours/i.test(cell) && i+1 < row.length && row[i+1]) contactStr = row[i+1].trim();
-      });
-    });
-  }
-
-  const titleP = paras.find(p=>p.includes('—') && p.includes('|'));
-  if (titleP){
-    const parts = titleP.split('|');
-    if (parts[1] && !sem) sem = parts[1].trim();
-  }
-
-  const mYr = (sem || '').match(/(20\d\d)/);
-  const yr = mYr ? parseInt(mYr[1],10) : 2026;
-  const isSpring = /spring|second/i.test(sem);
-  const acadYr = isSpring ? `${yr-1} / ${yr}` : `${yr} / ${yr+1}`;
-  const approvalDate = `End of Semester Council Meeting (${isSpring ? 'June' : 'January'} ${yr})`;
-
-  const mLevel = (moduleCode || '').match(/(\d)/);
-  const levelDigit = mLevel ? mLevel[1] : '4';
-  const levelNames = {
-    '1': 'Level 1 (1st Year / Freshman)',
-    '2': 'Level 2 (2nd Year / Sophomore)',
-    '3': 'Level 3 (3rd Year / Junior)',
-    '4': 'Level 4 (4th Year / Senior)',
-    '5': 'Level 5 (5th Year / Senior II)'
-  };
-  const levelStr = levelNames[levelDigit] || `Level ${levelDigit}`;
-
-  let contentTaught = '';
-  for (let i=0; i<paras.length; i++){
-    if (/^Course Content Taught:/i.test(paras[i])){
-      contentTaught = paras[i].replace(/^Course Content Taught:\s*/i,'').trim();
-      if (!contentTaught && i+1 < paras.length) contentTaught = paras[i+1].trim();
-      break;
-    } else if (/Course Content Taught/i.test(paras[i])){
-      if (i+1 < paras.length) contentTaught = paras[i+1].trim();
-      break;
-    }
-  }
-
-  function findComment(pattern){
-    for (let i=0; i<paras.length; i++){
-      if (pattern.test(paras[i])){
-        if (i+1 < paras.length && !/^(\d\.|Comment|Threshold|Grade|LO\d)/i.test(paras[i+1])){
-          return paras[i+1].trim();
-        }
-        return paras[i].replace(pattern,'').trim();
-      }
-    }
-    return '';
-  }
-
-  const mtComment = findComment(/Comment on Midterm Results:?/i);
-  const cwComment = findComment(/Comment on Coursework Results:?/i);
-  const fnComment = findComment(/Comment on Final Exam Results:?/i);
-  const loComment = findComment(/Comment on LOs Achievements:?/i);
-  const modComment = findComment(/Comments? on Module Results:?/i);
-
-  let satisfactionRate = '', participationRate = '';
-  tables.forEach(t=>{
-    t.forEach(r=>{
-      r.forEach(c=>{
-        if (/satisfaction/i.test(c)){
-          const m1 = c.match(/satisfaction:\s*([\d\.]+\s*%)/i);
-          const m2 = c.match(/participation\s*rate:\s*([\d\.]+\s*%)/i);
-          if (m1) satisfactionRate = m1[1];
-          if (m2) participationRate = m2[1];
-        }
-      });
-    });
-  });
-
-  const prevActions = [], newActions = [], gradeRows = [];
-  let wCount = 0, fCount = 0;
-
-  tables.forEach(t=>{
-    if (t.length > 1 && t[0].length >= 3 && /Area/i.test(t[0][0]) && /Required Action/i.test(t[0][1])){
-      for (let r=1; r<t.length; r++){
-        if (t[r].length >= 3) prevActions.push({area:t[r][0].trim(), action:t[r][1].trim(), impl:t[r][2].trim()});
-      }
-    } else if (t.length > 1 && t[0].length >= 4 && /Area/i.test(t[0][0]) && /Description/i.test(t[0][1]) && /Responsible/i.test(t[0][3])){
-      for (let r=1; r<t.length; r++){
-        if (t[r].length >= 4) newActions.push({area:t[r][0].trim(), desc:t[r][1].trim(), duration:t[r][2].trim(), resp:t[r][3].trim()});
-      }
-    } else if (t.length > 1 && t[0].length === 3 && /^Grade$/i.test(t[0][0]) && /#/i.test(t[0][1])){
-      for (let r=1; r<t.length; r++){
-        if (t[r][0] !== 'Total' && t[r].length >= 3){
-          const gr = t[r][0].trim().toUpperCase();
-          const cnt = t[r][1].trim();
-          const pct = t[r][2].trim();
-          gradeRows.push({grade: gr, count: cnt, pct});
-          if (gr === 'F') fCount = parseInt(cnt, 10) || 0;
-          if (gr === 'W') wCount = parseInt(cnt, 10) || 0;
-        }
-      }
-    }
-  });
-
-  let deptHead = '';
-  for (let i=0; i<paras.length; i++){
-    if (/Program Leader Comments:/i.test(paras[i]) && i+1 < paras.length){
-      deptHead = paras[i+1].trim();
-      break;
-    }
-  }
-
-  return {
-    templateType: 'STANDARD_MMR',
-    dept, sem, program, nStudents, moduleTitle, moduleCode, instructor, assistants,
-    contactStr, acadYr, approvalDate, levelStr, contentTaught, mtComment, cwComment,
-    fnComment, loComment, modComment, satisfactionRate, participationRate, prevActions,
-    newActions, gradeRows, deptHead, wCount, fCount
   };
 }
 
@@ -2640,25 +2608,23 @@ async function parseOldMmrDocx(file){
     xmlFindAll(tbl, 'tr').forEach(r=>{
       const rowData = [];
       xmlFindAll(r, 'tc').forEach(c=>{
-        const ct = xmlFindAll(c, 't').map(n=>n.textContent).join(' ').trim();
-        rowData.push(ct);
+        const cParas = [];
+        xmlFindAll(c, 'p').forEach(p=>{
+          const pt = xmlFindAll(p, 't').map(n=>n.textContent).join('').trim();
+          if (pt) cParas.push(pt);
+        });
+        rowData.push(cParas.join('\n'));
       });
       tblData.push(rowData);
     });
     tables.push(tblData);
   });
 
-  const detectedFormat = detectMmrTemplateFormat(paras, tables);
-  if (detectedFormat === 'TEMPLATE_14'){
-    return parseTemplate14MmrDocx(paras, tables);
-  } else {
-    return parseStandardMmrDocx(paras, tables);
-  }
+  return parseUniversalMmrDocx(paras, tables);
 }
 
 /**
  * Certified OOXML Builder for the NAQAEE 2025/2026 Template
- * Guarantees dynamic values with clean empty fallbacks (no fabricated text).
  */
 function buildNaqaeeDocxViaDocxLib(D){
   const {
@@ -2811,7 +2777,7 @@ function buildNaqaeeDocxViaDocxLib(D){
 
   // 2.1 Course Instructors
   content.push(subHeading('2.1 Course Instructors & Staffing'));
-  const asstList = D.assistants ? D.assistants.split('/').map(a=>a.trim()).filter(Boolean) : [];
+  const asstList = D.assistants ? D.assistants.split(/[\/\n]/).map(a=>a.trim()).filter(Boolean) : [];
   const t2Rows = [
     new TableRow({
       children: [
@@ -2968,26 +2934,18 @@ function buildNaqaeeDocxViaDocxLib(D){
 
   // 2.4 Student Assessment Results & Complete Grade Matrix (10 COLUMNS: A+ to D, plus F and W)
   content.push(subHeading('2.4 Student Assessment Results & Grade Distribution'));
-  const gradeMap = {};
+  const gradeMap = D.gradeMap || {};
   let fCount = (D.fCount !== undefined) ? D.fCount : 0;
   let wCount = (D.wCount !== undefined) ? D.wCount : 0;
-
-  D.gradeRows.forEach(g=>{
-    const gr = g.grade.toUpperCase().trim();
-    const cnt = parseInt(g.count, 10) || 0;
-    gradeMap[gr] = {count: cnt, pct: g.pct};
-    if (gr === 'F') fCount = cnt;
-    if (gr === 'W') wCount = cnt;
-  });
 
   const rawA = parseInt((gradeMap['A'] || {}).count || 0, 10);
   const rawB = parseInt((gradeMap['B'] || {}).count || 0, 10);
   const rawC = parseInt((gradeMap['C'] || {}).count || 0, 10);
   const rawD = parseInt((gradeMap['D'] || {}).count || 0, 10);
 
-  // Derive total registered if not specified
   const sumGrades = rawA + rawB + rawC + rawD + fCount + wCount;
-  const totalReg = parseInt(D.nStudents, 10) || (sumGrades > 0 ? sumGrades : 82);
+  let totalReg = parseInt(D.nStudents, 10) || sumGrades;
+  if (totalReg < sumGrades) totalReg = sumGrades;
 
   const completed = Math.max(0, totalReg - wCount);
   const passed = Math.max(0, completed - fCount);
@@ -3303,20 +3261,22 @@ $('naqaeeBtn').addEventListener('click', async ()=>{
     log('Reading MMR document…', null, naqaeeLogEl);
     const extractedData = await parseOldMmrDocx(naqaeeDocxFile);
     
-    const fmtBadge = extractedData.templateType === 'TEMPLATE_14' 
-      ? 'Template 14 (Legacy MMR Format)' 
-      : 'Standard MMR (Modern Format)';
-    log(`Detected Template Format: ${fmtBadge}`, 'ok', naqaeeLogEl);
     log(`Extracted metadata: ${extractedData.moduleTitle || 'Course'} (${extractedData.moduleCode || 'Code'}) — ${extractedData.sem || 'Semester'}`, 'ok', naqaeeLogEl);
     log(`Instructor: ${extractedData.instructor || 'Coordinator'} | Students: ${extractedData.nStudents || '-'}`, 'ok', naqaeeLogEl);
-    log(`Preserving complete 10-column grade matrix (A+ to D, plus F: ${extractedData.fCount || 0}, W: ${extractedData.wCount || 0}).`, 'ok', naqaeeLogEl);
+    
+    const gMap = extractedData.gradeMap || {};
+    const aCnt = (gMap['A']||{}).count || 0;
+    const bCnt = (gMap['B']||{}).count || 0;
+    const cCnt = (gMap['C']||{}).count || 0;
+    const dCnt = (gMap['D']||{}).count || 0;
+    log(`Extracted Grade Counts -> A: ${aCnt}, B: ${bCnt}, C: ${cCnt}, D: ${dCnt}, F: ${extractedData.fCount || 0}, W: ${extractedData.wCount || 0}`, 'ok', naqaeeLogEl);
 
     log('Building pristine NAQAEE Course Report (clean dynamic OOXML)…', null, naqaeeLogEl);
     const blob = await buildNaqaeeDocxViaDocxLib(extractedData);
     log('NAQAEE Course Report generated successfully.', 'ok', naqaeeLogEl);
 
     const url = URL.createObjectURL(blob);
-    const outName = `MMR_${extractedData.moduleCode || 'Module'}_${(extractedData.sem || '').replace(/\s+/g,'')}_NAQAEE.docx`;
+    const outName = `MMR_${extractedData.moduleCode || 'Module'}_${(extractedData.sem || '').replace(/[\/\s]+/g,'_')}_NAQAEE.docx`;
     $('naqaeeDlLink').href = url;
     $('naqaeeDlLink').download = outName;
     $('naqaeeOutName').textContent = outName;
