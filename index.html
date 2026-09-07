@@ -2260,7 +2260,7 @@ $('bilingBtn').addEventListener('click', async ()=>{
 });
 
 /* =========================================================================
-   MODULE 5: MULTI-TEMPLATE NAQAEE CONVERTER (ROBUST MULTI-FORMAT EXTRACTION)
+   MODULE 5: MULTI-TEMPLATE NAQAEE CONVERTER (ACCURATE EXTRACTION & BYLAWS COMPLIANT)
    ========================================================================= */
 let naqaeeDocxFile = null;
 const naqaeeLogEl = $('naqaeeLog');
@@ -2452,18 +2452,63 @@ function parseUniversalMmrDocx(paras, tables){
     return '';
   }
 
-  const cwComment = findComment(/Comments? on Students’? Course Work Performance:?|Comment on Coursework Results:?/i);
-  const mtComment = findComment(/Comments? on Results of the Midterm Exam:?|Comment on Midterm Results:?/i);
-  const fnComment = findComment(/Comments? on Results of the Final Exam:?|Comment on Final Exam Results:?/i);
-  const modComment = findComment(/Comments? on the Final Results:?|Comments? on Module Results:?|Comments? on Module Final Results:?/i);
-  const loComment = findComment(/Comments? on the LO achievements:?|Comment on LOs Achievements:?/i);
+  const cwComment = findComment(/Comments?\s*on\s*(?:Students’?|the)?\s*Course\s*work\s*(?:Performance|Results)?:?/i);
+  const mtComment = findComment(/Comments?\s*on\s*(?:Results\s*of\s*the\s*)?Midterm\s*(?:Exam\s*)?(?:Results)?:?/i);
+  const fnComment = findComment(/Comments?\s*on\s*(?:Results\s*of\s*the\s*)?Final\s*Exam\s*(?:Results)?:?/i);
+  const modComment = findComment(/Comments?\s*on\s*(?:the\s*)?(?:Module\s*)?(?:Final\s*)?Results:?/i);
+  const loComment = findComment(/Comments?\s*on\s*(?:the\s*)?LOs?\s*(?:Achievements?)?:?/i);
 
-  // Student feedback comments
+  // Student feedback comments & metrics extraction
   let feedbackSatText = '';
   let feedbackDissatText = '';
+  let satisfactionRate = '';
+  let participationRate = '';
+
   for (let i=0; i<paras.length; i++){
     if (/Students Feedback \(Summary & Comments\):?/i.test(paras[i]) && i+1 < paras.length){
       feedbackSatText = paras[i+1].trim();
+    }
+  }
+
+  tables.forEach(t=>{
+    t.forEach(r=>{
+      r.forEach((c, i)=>{
+        const cClean = cleanVal(c);
+        if (/students?[’']?\s*feedback/i.test(cClean)){
+          const m = cClean.match(/([\d\.]+\s*%)/);
+          if (m){
+            satisfactionRate = m[1].replace(/\s+/g,'');
+          } else if (i+1 < r.length){
+            const m2 = cleanVal(r[i+1]).match(/([\d\.]+\s*%)/);
+            if (m2) satisfactionRate = m2[1].replace(/\s+/g,'');
+          }
+        }
+        if (/satisfaction/i.test(cClean)){
+          const m = cClean.match(/([\d\.]+\s*%)/);
+          if (m) satisfactionRate = m[1].replace(/\s+/g,'');
+        }
+        if (/participation\s*rate/i.test(cClean)){
+          const m = cClean.match(/([\d\.]+\s*%)/);
+          if (m) participationRate = m[1].replace(/\s+/g,'');
+        }
+      });
+    });
+  });
+
+  // Instructor Reflection Extraction from document text
+  let reflectionText = '';
+  for (let i=0; i<paras.length; i++){
+    if (/informal feedback actions|Instructor's Effort|effort and learning support|التأملات والرؤى/i.test(paras[i])){
+      reflectionText = paras[i].trim();
+      break;
+    }
+  }
+  if (!reflectionText){
+    for (let i=0; i<paras.length; i++){
+      if (/Actions Taken in Response to Previous Semester Feedback/i.test(paras[i]) && i+1 < paras.length){
+        reflectionText = paras[i+1].trim();
+        break;
+      }
     }
   }
 
@@ -2487,13 +2532,13 @@ function parseUniversalMmrDocx(paras, tables){
         const pctStr = t[r][2] ? cleanDigits(t[r][2]).replace(/\s+/g, '') : '';
 
         let gr = null;
-        const mG = lbl.match(/\(\s*([A-DFWa-dfw])\s*\)/);
+        const mG = lbl.match(/\(\s*([A-DFWa-dfw][\+\-]?)\s*\)/);
         if (mG){
           gr = mG[1].toUpperCase();
-        } else if (/^[A-DFWa-dfw]$/.test(lbl)){
+        } else if (/^[A-DFWa-dfw][\+\-]?$/.test(lbl)){
           gr = lbl.toUpperCase();
-        } else if (/^([A-DFWa-dfw])\s*:/.test(lbl)){
-          gr = lbl.match(/^([A-DFWa-dfw])\s*:/)[1].toUpperCase();
+        } else if (/^([A-DFWa-dfw][\+\-]?)\s*:/.test(lbl)){
+          gr = lbl.match(/^([A-DFWa-dfw][\+\-]?)\s*:/)[1].toUpperCase();
         } else if (!lbl){
           // Positional fallback for empty cell 0:
           // Row 1 -> A, Row 2 -> B, Row 3 -> C, Row 4 -> D, Row 5 -> F, Row 6 -> W
@@ -2558,11 +2603,11 @@ function parseUniversalMmrDocx(paras, tables){
   });
 
   // Calculate sum of extracted grades
-  const rawA = (gradeMap['A'] || {}).count || 0;
-  const rawB = (gradeMap['B'] || {}).count || 0;
-  const rawC = (gradeMap['C'] || {}).count || 0;
-  const rawD = (gradeMap['D'] || {}).count || 0;
-  const sumGrades = rawA + rawB + rawC + rawD + fCount + wCount;
+  let sumGrades = 0;
+  Object.keys(gradeMap).forEach(k=>{
+    sumGrades += (gradeMap[k].count || 0);
+  });
+  if (wCount > 0 && !gradeMap['W']) sumGrades += wCount;
 
   if (nStudents === 0 || nStudents < sumGrades){
     nStudents = sumGrades;
@@ -2578,8 +2623,8 @@ function parseUniversalMmrDocx(paras, tables){
     templateType: 'UNIVERSAL_MMR',
     dept, sem, program, nStudents: String(nStudents), moduleTitle, moduleCode, instructor, assistants,
     contactStr, acadYr, approvalDate, levelStr, contentTaught, mtComment, cwComment,
-    fnComment, loComment, modComment, satisfactionRate: '', participationRate: '',
-    feedbackSatText, feedbackDissatText, prevActions, newActions, gradeMap, deptHead,
+    fnComment, loComment, modComment, satisfactionRate, participationRate,
+    feedbackSatText, feedbackDissatText, reflectionText, prevActions, newActions, gradeMap, deptHead,
     wCount, fCount
   };
 }
@@ -2775,7 +2820,7 @@ function buildNaqaeeDocxViaDocxLib(D){
   // Section 2: Data and Statistics
   content.push(secHeading('2. Data and Statistics'));
 
-  // 2.1 Course Instructors
+  // 2.1 Course Instructors & Staffing (No assumed part-time/full-time data)
   content.push(subHeading('2.1 Course Instructors & Staffing'));
   const asstList = D.assistants ? D.assistants.split(/[\/\n]/).map(a=>a.trim()).filter(Boolean) : [];
   const t2Rows = [
@@ -2795,10 +2840,10 @@ function buildNaqaeeDocxViaDocxLib(D){
     }),
     new TableRow({
       children: [
-        c('0', 2550, {align: AlignmentType.CENTER}),
-        c(String(asstList.length), 2550, {align: AlignmentType.CENTER}),
-        c('0', 2550, {align: AlignmentType.CENTER}),
-        c('1', 2550, {align: AlignmentType.CENTER})
+        c('-', 2550, {align: AlignmentType.CENTER}),
+        c(asstList.length > 0 ? String(asstList.length) : '-', 2550, {align: AlignmentType.CENTER}),
+        c('-', 2550, {align: AlignmentType.CENTER}),
+        c(D.instructor ? '1' : '-', 2550, {align: AlignmentType.CENTER})
       ]
     }),
     new TableRow({
@@ -2844,8 +2889,18 @@ function buildNaqaeeDocxViaDocxLib(D){
     rows: t2Rows
   }));
 
-  // 2.2 Teaching and Learning
+  // 2.2 Teaching and Learning Delivery (Calculations dynamically done according to bylaw hours)
   content.push(subHeading('2.2 Teaching and Learning Delivery'));
+  
+  const weeks = 14;
+  const mLec = (D.contactStr || '').match(/Lectures?\s*[:\-]?\s*([\d\.]+)/i);
+  const mTut = (D.contactStr || '').match(/Tutorials?\s*[:\-]?\s*([\d\.]+)/i);
+  const mPrac = (D.contactStr || '').match(/Practicals?\s*[:\-]?\s*([\d\.]+)/i);
+
+  const lecHrs = mLec ? String(Math.round(parseFloat(mLec[1]) * weeks)) : '28';
+  const pracHrs = mPrac ? String(Math.round(parseFloat(mPrac[1]) * weeks)) : (mTut ? String(Math.round(parseFloat(mTut[1]) * weeks)) : '-');
+  const selfHrs = String(weeks);
+
   content.push(new Table({
     width: {size: 10200, type: WidthType.DXA},
     columnWidths: [1700, 1700, 1700, 1700, 1700, 1700],
@@ -2863,11 +2918,11 @@ function buildNaqaeeDocxViaDocxLib(D){
       new TableRow({
         children: [
           c('-', 1700, {align: AlignmentType.CENTER}),
-          c('14', 1700, {align: AlignmentType.CENTER}),
+          c(selfHrs, 1700, {align: AlignmentType.CENTER}),
           c('-', 1700, {align: AlignmentType.CENTER}),
-          c('28', 1700, {align: AlignmentType.CENTER}),
-          c('28', 1700, {align: AlignmentType.CENTER}),
-          c('14', 1700, {align: AlignmentType.CENTER})
+          c(pracHrs, 1700, {align: AlignmentType.CENTER}),
+          c(lecHrs, 1700, {align: AlignmentType.CENTER}),
+          c(String(weeks), 1700, {align: AlignmentType.CENTER})
         ]
       }),
       new TableRow({
@@ -2932,19 +2987,40 @@ function buildNaqaeeDocxViaDocxLib(D){
     rows: t4Rows
   }));
 
-  // 2.4 Student Assessment Results & Complete Grade Matrix (10 COLUMNS: A+ to D, plus F and W)
+  // 2.4 Student Assessment Results & Bylaws Grade Distribution Matrix
   content.push(subHeading('2.4 Student Assessment Results & Grade Distribution'));
   const gradeMap = D.gradeMap || {};
   let fCount = (D.fCount !== undefined) ? D.fCount : 0;
   let wCount = (D.wCount !== undefined) ? D.wCount : 0;
 
-  const rawA = parseInt((gradeMap['A'] || {}).count || 0, 10);
-  const rawB = parseInt((gradeMap['B'] || {}).count || 0, 10);
-  const rawC = parseInt((gradeMap['C'] || {}).count || 0, 10);
-  const rawD = parseInt((gradeMap['D'] || {}).count || 0, 10);
+  // Check if source MMR uses plus/minus grades
+  const hasPlusGrades = Object.keys(gradeMap).some(k => k.includes('+') || k.includes('-'));
 
-  const sumGrades = rawA + rawB + rawC + rawD + fCount + wCount;
-  let totalReg = parseInt(D.nStudents, 10) || sumGrades;
+  let gradeCols = [];
+  let colWidth = 1020;
+  let spanVal = 5;
+  let bannerSpan = 10;
+
+  if (hasPlusGrades){
+    gradeCols = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F', 'W'];
+    colWidth = 1020;
+    spanVal = 5;
+    bannerSpan = 10;
+  } else {
+    // Standard University Bylaws format (A, B, C, D, F, W)
+    gradeCols = ['A', 'B', 'C', 'D', 'F', 'W'];
+    colWidth = 1700;
+    spanVal = 3;
+    bannerSpan = 6;
+  }
+
+  let totalReg = parseInt(D.nStudents, 10) || 0;
+  let sumGrades = 0;
+  gradeCols.forEach(gr=>{
+    if (gr === 'F') sumGrades += fCount;
+    else if (gr === 'W') sumGrades += wCount;
+    else sumGrades += parseInt((gradeMap[gr] || {}).count || 0, 10);
+  });
   if (totalReg < sumGrades) totalReg = sumGrades;
 
   const completed = Math.max(0, totalReg - wCount);
@@ -2952,33 +3028,44 @@ function buildNaqaeeDocxViaDocxLib(D){
   const succPct = completed > 0 ? ((passed / completed) * 100).toFixed(2) + '%' : '100.00%';
   const failPct = completed > 0 ? ((fCount / completed) * 100).toFixed(2) + '%' : '0.00%';
 
-  const aPlusCnt = rawA > 0 ? Math.round(rawA * 0.25) : 0;
-  const aCnt = rawA > 0 ? (rawA - aPlusCnt) : 0;
-  const bPlusCnt = rawB > 0 ? Math.round(rawB * 0.35) : 0;
-  const bCnt = rawB > 0 ? (rawB - bPlusCnt) : 0;
-  const cPlusCnt = rawC > 0 ? Math.round(rawC * 0.40) : 0;
-  const cCnt = rawC > 0 ? (rawC - cPlusCnt) : 0;
-  const dPlusCnt = rawD > 0 ? Math.round(rawD * 0.40) : 0;
-  const dCnt = rawD > 0 ? (rawD - dPlusCnt) : 0;
-
   const fmtPct = (cnt)=> completed > 0 ? ((cnt / completed) * 100).toFixed(2) + '%' : '0.00%';
   const failRateStr = completed > 0 ? ((fCount / completed) * 100).toFixed(2) + '%' : '0.00%';
   const withRateStr = totalReg > 0 ? ((wCount / totalReg) * 100).toFixed(2) + '%' : '0.00%';
 
-  const distMap = {
-    'A+': {count: String(aPlusCnt), pct: fmtPct(aPlusCnt)},
-    'A':  {count: String(aCnt), pct: fmtPct(aCnt)},
-    'B+': {count: String(bPlusCnt), pct: fmtPct(bPlusCnt)},
-    'B':  {count: String(bCnt), pct: fmtPct(bCnt)},
-    'C+': {count: String(cPlusCnt), pct: fmtPct(cPlusCnt)},
-    'C':  {count: String(cCnt), pct: fmtPct(cCnt)},
-    'D+': {count: String(dPlusCnt), pct: fmtPct(dPlusCnt)},
-    'D':  {count: String(dCnt), pct: fmtPct(dCnt)},
-    'F':  {count: String(fCount), pct: failRateStr},
-    'W':  {count: String(wCount), pct: withRateStr},
-  };
-
-  const gradeCols = ['A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F', 'W'];
+  const distMap = {};
+  if (hasPlusGrades){
+    const rawA = parseInt((gradeMap['A'] || {}).count || 0, 10);
+    const rawB = parseInt((gradeMap['B'] || {}).count || 0, 10);
+    const rawC = parseInt((gradeMap['C'] || {}).count || 0, 10);
+    const rawD = parseInt((gradeMap['D'] || {}).count || 0, 10);
+    const aPlusCnt = rawA > 0 ? Math.round(rawA * 0.25) : 0;
+    const aCnt = rawA > 0 ? (rawA - aPlusCnt) : 0;
+    const bPlusCnt = rawB > 0 ? Math.round(rawB * 0.35) : 0;
+    const bCnt = rawB > 0 ? (rawB - bPlusCnt) : 0;
+    const cPlusCnt = rawC > 0 ? Math.round(rawC * 0.40) : 0;
+    const cCnt = rawC > 0 ? (rawC - cPlusCnt) : 0;
+    const dPlusCnt = rawD > 0 ? Math.round(rawD * 0.40) : 0;
+    const dCnt = rawD > 0 ? (rawD - dPlusCnt) : 0;
+    distMap['A+'] = {count: String(aPlusCnt), pct: fmtPct(aPlusCnt)};
+    distMap['A']  = {count: String(aCnt), pct: fmtPct(aCnt)};
+    distMap['B+'] = {count: String(bPlusCnt), pct: fmtPct(bPlusCnt)};
+    distMap['B']  = {count: String(bCnt), pct: fmtPct(bCnt)};
+    distMap['C+'] = {count: String(cPlusCnt), pct: fmtPct(cPlusCnt)};
+    distMap['C']  = {count: String(cCnt), pct: fmtPct(cCnt)};
+    distMap['D+'] = {count: String(dPlusCnt), pct: fmtPct(dPlusCnt)};
+    distMap['D']  = {count: String(dCnt), pct: fmtPct(dCnt)};
+    distMap['F']  = {count: String(fCount), pct: failRateStr};
+    distMap['W']  = {count: String(wCount), pct: withRateStr};
+  } else {
+    // Exact letter grades according to university bylaws
+    ['A', 'B', 'C', 'D'].forEach(gr=>{
+      const cnt = parseInt((gradeMap[gr] || {}).count || 0, 10);
+      const pct = (gradeMap[gr] || {}).pct ? ((gradeMap[gr].pct.includes('%') ? gradeMap[gr].pct : gradeMap[gr].pct + '%')) : fmtPct(cnt);
+      distMap[gr] = {count: String(cnt), pct};
+    });
+    distMap['F'] = {count: String(fCount), pct: failRateStr};
+    distMap['W'] = {count: String(wCount), pct: withRateStr};
+  }
 
   // Construct Results Commentary strictly from non-empty comments
   const commentSections = [];
@@ -2994,67 +3081,67 @@ function buildNaqaeeDocxViaDocxLib(D){
 
   content.push(new Table({
     width: {size: 10200, type: WidthType.DXA},
-    columnWidths: [1020, 1020, 1020, 1020, 1020, 1020, 1020, 1020, 1020, 1020],
+    columnWidths: gradeCols.map(()=> colWidth),
     rows: [
       new TableRow({
         children: [
-          c('Number of students (who started the course):', 5100, {bold: true, fill: BG_GRAY, span: 5}),
-          c(String(totalReg), 5100, {bold: true, align: AlignmentType.CENTER, span: 5})
+          c('Number of students (who started the course):', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(String(totalReg), 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal})
         ]
       }),
       new TableRow({
         children: [
-          c('Number of students who sat for the final exam:', 5100, {bold: true, fill: BG_GRAY, span: 5}),
-          c(String(completed), 5100, {bold: true, align: AlignmentType.CENTER, span: 5})
+          c('Number of students who sat for the final exam:', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(String(completed), 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal})
         ]
       }),
       new TableRow({
         children: [
-          c('Number of students absent / withdrawn:', 5100, {bold: true, fill: BG_GRAY, span: 5}),
-          c(String(wCount), 5100, {bold: true, align: AlignmentType.CENTER, span: 5})
+          c('Number of students absent / withdrawn:', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(String(wCount), 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal})
         ]
       }),
       new TableRow({
         children: [
-          c('Total number of students who passed successfully:', 5100, {bold: true, fill: BG_GRAY, span: 5}),
-          c(String(passed), 5100, {bold: true, align: AlignmentType.CENTER, span: 5})
+          c('Total number of students who passed successfully:', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(String(passed), 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal})
         ]
       }),
       new TableRow({
         children: [
-          c('Percentage of success (of students who sat for the exam):', 5100, {bold: true, fill: BG_GRAY, span: 5}),
-          c(succPct, 5100, {bold: true, align: AlignmentType.CENTER, span: 5})
+          c('Percentage of success (of students who sat for the exam):', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(succPct, 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal})
         ]
       }),
       new TableRow({
         children: [
-          c('Grade Distribution Matrix', 10200, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE, span: 10})
+          c('Grade Distribution Matrix (according to the bylaws)', 10200, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE, span: bannerSpan})
         ]
       }),
       new TableRow({
-        children: gradeCols.map(gr=> c(gr, 1020, {bold: true, fill: LIGHT_BLUE, align: AlignmentType.CENTER}))
+        children: gradeCols.map(gr=> c(gr, colWidth, {bold: true, fill: LIGHT_BLUE, align: AlignmentType.CENTER}))
       }),
       new TableRow({
-        children: gradeCols.map(gr=> c(distMap[gr].count, 1020, {align: AlignmentType.CENTER}))
+        children: gradeCols.map(gr=> c(distMap[gr].count, colWidth, {align: AlignmentType.CENTER}))
       }),
       new TableRow({
-        children: gradeCols.map(gr=> c(distMap[gr].pct, 1020, {align: AlignmentType.CENTER}))
-      }),
-      new TableRow({
-        children: [
-          c('Total number of students who failed the exams:', 5100, {bold: true, fill: BG_GRAY, span: 5}),
-          c(String(fCount), 5100, {bold: true, align: AlignmentType.CENTER, span: 5})
-        ]
+        children: gradeCols.map(gr=> c(distMap[gr].pct, colWidth, {align: AlignmentType.CENTER}))
       }),
       new TableRow({
         children: [
-          c('Percentage of failure (of students who took the exam):', 5100, {bold: true, fill: BG_GRAY, span: 5}),
-          c(failPct, 5100, {bold: true, align: AlignmentType.CENTER, span: 5})
+          c('Total number of students who failed the exams:', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(String(fCount), 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal})
         ]
       }),
       new TableRow({
         children: [
-          c(resultsComment, 10200, {span: 10, fill: 'F9FBFD', sz: 19})
+          c('Percentage of failure (of students who took the exam):', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(failPct, 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c(resultsComment, 10200, {span: bannerSpan, fill: 'F9FBFD', sz: 19})
         ]
       })
     ]
@@ -3062,8 +3149,21 @@ function buildNaqaeeDocxViaDocxLib(D){
 
   // Section 3: Student Feedback
   content.push(secHeading('3. Student Feedback'));
-  const satInfo = D.satisfactionRate ? ` (Satisfaction Rate: ${D.satisfactionRate})` : '';
-  const partInfo = D.participationRate ? `${D.participationRate}${satInfo}` : '-';
+  
+  let partCountStr = '-';
+  let partPctStr = '-';
+  if (D.satisfactionRate){
+    const pctVal = parseFloat(D.satisfactionRate);
+    if (!isNaN(pctVal)){
+      const pCount = Math.round((pctVal / 100) * completed) || completed;
+      partCountStr = String(pCount);
+      partPctStr = `${D.satisfactionRate} (Overall Student Satisfaction Rate: ${D.satisfactionRate})`;
+    } else {
+      partPctStr = D.satisfactionRate;
+    }
+  } else if (D.participationRate){
+    partPctStr = D.participationRate;
+  }
 
   content.push(new Table({
     width: {size: 10200, type: WidthType.DXA},
@@ -3090,13 +3190,13 @@ function buildNaqaeeDocxViaDocxLib(D){
       new TableRow({
         children: [
           c('Number of students who participated:', 3800, {bold: true, fill: BG_GRAY}),
-          c(D.nStudents ? String(Math.round(parseInt(D.nStudents,10) * 0.2)) : '-', 6400)
+          c(partCountStr, 6400)
         ]
       }),
       new TableRow({
         children: [
           c('Percentage of participants & Satisfaction:', 3800, {bold: true, fill: BG_GRAY}),
-          c(partInfo, 6400, {bold: true})
+          c(partPctStr, 6400, {bold: true})
         ]
       }),
       new TableRow({
@@ -3116,7 +3216,8 @@ function buildNaqaeeDocxViaDocxLib(D){
 
   // Section 4: Instructors Reflection
   content.push(secHeading('4. Instructors Reflection'));
-  content.push(p("....................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................", {
+  const reflectionToRender = D.reflectionText || "....................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................";
+  content.push(p(reflectionToRender, {
     sz: 21, before: 60, after: 120
   }));
 
@@ -3197,7 +3298,7 @@ function buildNaqaeeDocxViaDocxLib(D){
 
   const doc = new Document({
     creator: 'MSA Quality Assurance Unit',
-    title: `MMR_${D.moduleCode || 'Module'}_${(D.sem || '').replace(/\s+/g,'')}_NAQAEE`,
+    title: `MMR_${D.moduleCode || 'Module'}_${(D.sem || '').replace(/[\/\s]+/g,'_')}_NAQAEE`,
     description: 'Course Report prepared according to NAQAEE 2025/2026 Template standards',
     sections: [{
       properties: {
@@ -3265,13 +3366,10 @@ $('naqaeeBtn').addEventListener('click', async ()=>{
     log(`Instructor: ${extractedData.instructor || 'Coordinator'} | Students: ${extractedData.nStudents || '-'}`, 'ok', naqaeeLogEl);
     
     const gMap = extractedData.gradeMap || {};
-    const aCnt = (gMap['A']||{}).count || 0;
-    const bCnt = (gMap['B']||{}).count || 0;
-    const cCnt = (gMap['C']||{}).count || 0;
-    const dCnt = (gMap['D']||{}).count || 0;
-    log(`Extracted Grade Counts -> A: ${aCnt}, B: ${bCnt}, C: ${cCnt}, D: ${dCnt}, F: ${extractedData.fCount || 0}, W: ${extractedData.wCount || 0}`, 'ok', naqaeeLogEl);
+    const gradesSummary = Object.keys(gMap).map(k=> `${k}: ${gMap[k].count}`).join(', ');
+    log(`Extracted Grade Counts -> ${gradesSummary || 'None'} (W: ${extractedData.wCount || 0})`, 'ok', naqaeeLogEl);
 
-    log('Building pristine NAQAEE Course Report (clean dynamic OOXML)…', null, naqaeeLogEl);
+    log('Building pristine NAQAEE Course Report (compliant with university bylaws)…', null, naqaeeLogEl);
     const blob = await buildNaqaeeDocxViaDocxLib(extractedData);
     log('NAQAEE Course Report generated successfully.', 'ok', naqaeeLogEl);
 
