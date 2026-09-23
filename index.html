@@ -2511,6 +2511,11 @@ function parseUniversalMmrDocx(paras, tables){
       }
     }
   }
+  if (reflectionText){
+    // Speak directly to the reflection by cleaning administrative prefixes
+    reflectionText = reflectionText.replace(/^This term'?s informal feedback actions:\s*(?:In response to the actions required from [^:]+:\s*(?:\(1\))?)?/i, '').trim();
+    reflectionText = reflectionText.replace(/^\(?1\)?\s*[-–.]?\s*/, '').trim();
+  }
 
   // --- GRADE EXTRACTION ENGINE ---
   const gradeMap = {};
@@ -2820,14 +2825,22 @@ function buildNaqaeeDocxViaDocxLib(D){
   // Section 2: Data and Statistics
   content.push(secHeading('2. Data and Statistics'));
 
-  // 2.1 Course Instructors & Staffing (No assumed part-time/full-time data)
+  // 2.1 Course Instructors & Staffing
   content.push(subHeading('2.1 Course Instructors & Staffing'));
   const asstList = D.assistants ? D.assistants.split(/[\/\n]/).map(a=>a.trim()).filter(Boolean) : [];
+  
+  // Faculty Staff on Left (Dr. Tarek Part-time), Teaching Assistants on Right (TA Full-time)
+  const isDrTarek = /tarek|part/i.test(D.instructor || '');
+  const facPart = isDrTarek ? '1' : '-';
+  const facFull = isDrTarek ? '-' : (D.instructor ? '1' : '-');
+  const taPart = '-';
+  const taFull = asstList.length > 0 ? String(asstList.length) : '1';
+
   const t2Rows = [
     new TableRow({
       children: [
-        c('Number of Teaching Assistants', 5100, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE, span: 2}),
-        c('Number of Faculty Staff', 5100, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE, span: 2})
+        c('Number of Faculty Staff', 5100, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE, span: 2}),
+        c('Number of Teaching Assistants', 5100, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE, span: 2})
       ]
     }),
     new TableRow({
@@ -2840,10 +2853,10 @@ function buildNaqaeeDocxViaDocxLib(D){
     }),
     new TableRow({
       children: [
-        c('-', 2550, {align: AlignmentType.CENTER}),
-        c(asstList.length > 0 ? String(asstList.length) : '-', 2550, {align: AlignmentType.CENTER}),
-        c('-', 2550, {align: AlignmentType.CENTER}),
-        c(D.instructor ? '1' : '-', 2550, {align: AlignmentType.CENTER})
+        c(facPart, 2550, {align: AlignmentType.CENTER}),
+        c(facFull, 2550, {align: AlignmentType.CENTER}),
+        c(taPart, 2550, {align: AlignmentType.CENTER}),
+        c(taFull, 2550, {align: AlignmentType.CENTER})
       ]
     }),
     new TableRow({
@@ -2897,9 +2910,14 @@ function buildNaqaeeDocxViaDocxLib(D){
   const mTut = (D.contactStr || '').match(/Tutorials?\s*[:\-]?\s*([\d\.]+)/i);
   const mPrac = (D.contactStr || '').match(/Practicals?\s*[:\-]?\s*([\d\.]+)/i);
 
-  const lecHrs = mLec ? String(Math.round(parseFloat(mLec[1]) * weeks)) : '28';
-  const pracHrs = mPrac ? String(Math.round(parseFloat(mPrac[1]) * weeks)) : (mTut ? String(Math.round(parseFloat(mTut[1]) * weeks)) : '-');
-  const selfHrs = String(weeks);
+  const lecRate = mLec ? parseFloat(mLec[1]) : 3;
+  const tutRate = mTut ? parseFloat(mTut[1]) : 0;
+  const pracRate = mPrac ? parseFloat(mPrac[1]) : (mTut ? 0 : 1);
+
+  const lecHrs = String(Math.round(lecRate * weeks));
+  const pracHrs = String(Math.round((pracRate > 0 ? pracRate : tutRate) * weeks));
+  const totalWeekly = lecRate + tutRate + pracRate;
+  const selfHrs = String(Math.round(totalWeekly * weeks));
 
   content.push(new Table({
     width: {size: 10200, type: WidthType.DXA},
@@ -2972,14 +2990,6 @@ function buildNaqaeeDocxViaDocxLib(D){
       ]
     }));
   });
-
-  t4Rows.push(new TableRow({
-    children: [
-      c('Comment on Assessment Procedures:\nAssessment procedures adhered strictly to the Faculty Examination Blueprint and NAQAEE Quality Assurance standards. Exam papers and marking keys underwent internal moderation. Passing requires obtaining at least 50% in total marks (50/100) with satisfactory final exam performance.', 10200, {
-        span: 5, fill: 'F9FBFD', sz: 19
-      })
-    ]
-  }));
 
   content.push(new Table({
     width: {size: 10200, type: WidthType.DXA},
@@ -3057,13 +3067,12 @@ function buildNaqaeeDocxViaDocxLib(D){
     distMap['F']  = {count: String(fCount), pct: failRateStr};
     distMap['W']  = {count: String(wCount), pct: withRateStr};
   } else {
-    // Exact letter grades according to university bylaws
+    // Exact letter grades according to university bylaws - consistently calculated based on completed cohort
     ['A', 'B', 'C', 'D'].forEach(gr=>{
       const cnt = parseInt((gradeMap[gr] || {}).count || 0, 10);
-      const pct = (gradeMap[gr] || {}).pct ? ((gradeMap[gr].pct.includes('%') ? gradeMap[gr].pct : gradeMap[gr].pct + '%')) : fmtPct(cnt);
-      distMap[gr] = {count: String(cnt), pct};
+      distMap[gr] = {count: String(cnt), pct: fmtPct(cnt)};
     });
-    distMap['F'] = {count: String(fCount), pct: failRateStr};
+    distMap['F'] = {count: String(fCount), pct: fmtPct(fCount)};
     distMap['W'] = {count: String(wCount), pct: withRateStr};
   }
 
@@ -3126,18 +3135,6 @@ function buildNaqaeeDocxViaDocxLib(D){
       }),
       new TableRow({
         children: gradeCols.map(gr=> c(distMap[gr].pct, colWidth, {align: AlignmentType.CENTER}))
-      }),
-      new TableRow({
-        children: [
-          c('Total number of students who failed the exams:', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
-          c(String(fCount), 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal})
-        ]
-      }),
-      new TableRow({
-        children: [
-          c('Percentage of failure (of students who took the exam):', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
-          c(failPct, 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal})
-        ]
       }),
       new TableRow({
         children: [
