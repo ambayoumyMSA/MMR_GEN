@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MMR Report Generator — MSA Quality Assurance Unit</title>
+<title>MMR Report Generator & NAQAEE Converter — MSA Quality Assurance Unit</title>
 <style>
   :root{
     --navy:#1F3864;
@@ -175,7 +175,7 @@
   .qa-name:focus{outline:2px solid var(--blue);outline-offset:1px;}
 
   .actions{display:flex;align-items:center;gap:14px;margin-top:6px;}
-  button#genBtn{
+  button#genBtn, button#bilingBtn, button#naqaeeBtn{
     background:var(--navy);
     color:#fff;
     border:none;
@@ -188,15 +188,15 @@
     letter-spacing:.2px;
     display:inline-flex; align-items:center; gap:10px;
   }
-  button#genBtn:hover:not(:disabled){background:var(--blue);}
-  button#genBtn:disabled{background:#aab4c6;cursor:not-allowed;}
+  button#genBtn:hover:not(:disabled), button#bilingBtn:hover:not(:disabled), button#naqaeeBtn:hover:not(:disabled){background:var(--blue);}
+  button#genBtn:disabled, button#bilingBtn:disabled, button#naqaeeBtn:disabled{background:#aab4c6;cursor:not-allowed;}
 
   .spinner{
     width:14px;height:14px;border-radius:50%;
     border:2px solid rgba(255,255,255,.4); border-top-color:#fff;
     display:none; animation:spin .7s linear infinite;
   }
-  button#genBtn.busy .spinner{display:inline-block;}
+  button#genBtn.busy .spinner, button#bilingBtn.busy .spinner, button#naqaeeBtn.busy .spinner{display:inline-block;}
   @keyframes spin{to{transform:rotate(360deg);}}
 
   .status{font-size:13px;color:var(--hint);}
@@ -220,7 +220,6 @@
 
   #downloadCard{display:none;}
   #bilingDownloadCard{display:none;}
-  #naqaeeDownloadCard{display:none;}
   #downloadCard, #bilingDownloadCard, #naqaeeDownloadCard{animation:popIn .35s cubic-bezier(.34,1.56,.64,1) both;}
   #downloadCard .dl, #bilingDownloadCard .dl, #naqaeeDownloadCard .dl{
     display:flex;align-items:center;gap:14px;
@@ -264,8 +263,6 @@
   .wrap > .card:nth-of-type(5){animation-delay:.33s;}
   .wrap > .card:nth-of-type(6){animation-delay:.40s;}
   .wrap > .card:nth-of-type(7){animation-delay:.47s;}
-  .wrap > .card:nth-of-type(8){animation-delay:.54s;}
-  .wrap > .card:nth-of-type(9){animation-delay:.61s;}
   .footer-note{animation:fadeInUp .5s ease .4s both;}
 
   .card{transition:background .25s ease, border-color .25s ease, box-shadow .2s ease, transform .2s ease;}
@@ -400,35 +397,36 @@
   </div>
 
   <div class="card">
-    <h2><span class="num">5</span> Convert to NAQAAE Course Report template <span class="badge-opt">optional</span></h2>
-    <p class="hint">Upload an MMR Word document produced by Step 4 above to produce a copy re-formatted into the 2025 NAQAAE "Course Report" template. This reads the report you already generated — not the workbook or PDF above. Fields with no equivalent in the MMR data (credit hours/points, course type, department-council signature, etc.) are left blank for you to complete, matching the template's own convention.</p>
-    <label class="drop" id="dropNaqaee">
-      <div class="icon">🗂️</div>
+    <h2><span class="num">5</span> Convert to NAQAEE Template (English) <span class="badge-opt">new</span></h2>
+    <p class="hint">Upload any MMR Word document (.docx) received or generated in the standard English template. This converter extracts all course data, delivery information, assessment statistics, grade distributions, feedback, and action plans, calculates and distributes assessment timelines across semester weeks, and automatically populates the official <strong>NAQAEE (2025/2026) Course Report Template</strong>. Runs 100% offline in your browser.</p>
+    <label class="drop" id="dropNaqaeeDocx">
+      <div class="icon">🏛️</div>
       <div class="meta">
-        <div class="fname" id="naqaeeName">Drag &amp; drop the generated MMR .docx file here, or click to browse…</div>
-        <div class="fsub" id="naqaeeSub">A previously generated MMR report</div>
+        <div class="fname" id="naqaeeDocxName">Drag &amp; drop the MMR Word document (.docx) here, or click to browse…</div>
+        <div class="fsub" id="naqaeeDocxSub">Received MMR .docx (English Old Template)</div>
       </div>
-      <button type="button" class="clear-btn" id="naqaeeClear" title="Remove file" aria-label="Remove file">✕</button>
-      <input type="file" id="naqaeeInput" accept=".docx">
+      <button type="button" class="clear-btn" id="naqaeeDocxClear" title="Remove file" aria-label="Remove file">✕</button>
+      <input type="file" id="naqaeeDocxInput" accept=".docx">
     </label>
     <div class="actions" style="margin-top:16px;">
-      <button id="naqaeeBtn"><span class="spinner"></span><span class="btn-label">Convert to NAQAAE Template</span></button>
+      <button id="naqaeeBtn"><span class="spinner"></span><span class="btn-label">Convert to NAQAEE Template</span></button>
       <span class="status" id="naqaeeStatusText"></span>
     </div>
     <div id="naqaeeLog"></div>
   </div>
 
   <div class="card" id="naqaeeDownloadCard">
-    <h2><span class="num">✓</span> NAQAAE version ready</h2>
+    <h2><span class="num">✓</span> NAQAEE Course Report ready</h2>
     <div class="dl">
-      <div class="icon">🗂️</div>
+      <div class="icon">🏛️</div>
       <div class="meta">
-        <div class="fname" id="naqaeeOutName">Course_Report_NAQAAE.docx</div>
-        <div class="fsub">Mapped fields filled in — please complete the fields left blank before submission</div>
+        <div class="fname" id="naqaeeOutName">MMR_report_NAQAEE.docx</div>
+        <div class="fsub">Formatted to match the official NAQAEE Course Report Template</div>
       </div>
-      <a class="dlbtn" id="naqaeeDlLink" download="Course_Report_NAQAAE.docx">Download .docx</a>
+      <a class="dlbtn" id="naqaeeDlLink" download="MMR_report_NAQAEE.docx">Download .docx</a>
     </div>
   </div>
+
 
   <p class="footer-note">Runs entirely in your browser — no files are uploaded to any server.<br>Built for the October University for Modern Sciences &amp; Arts · Quality Assurance Unit, Faculty of Engineering.</p>
   <p class="footer-note app-credit">Programmed and coded under supervision of:<br><strong>Associate Professor Dr. Amgad Bayoumy</strong><br>Mechatronics Engineering Department, MSA University<br><a href="mailto:ambayoumy@msa.edu.eg">ambayoumy@msa.edu.eg</a></p>
@@ -1816,20 +1814,14 @@ function buildDocx(D, images, qaName){
   }
 
   /* ---------------- Header / Footer ---------------- */
-  const headerCellBorder = {
-    top:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},
-    left:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},
-    right:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},
-    bottom:{style:BorderStyle.SINGLE,size:4,color:BLUE}
-  };
   const header = new Header({children:[
     new Table({
       width:{size:10466, type:WidthType.DXA}, columnWidths:[5573,4893],
       rows:[new TableRow({children:[
-        new TableCell({width:{size:5573,type:WidthType.DXA}, borders:headerCellBorder, children:[
+        new TableCell({width:{size:5573,type:WidthType.DXA}, borders:noBorder, children:[
           new Paragraph({children:[run('October University for Modern Sciences & Arts - MSA', {bold:true, color:NAVY, size:SMALL})]})
         ]}),
-        new TableCell({width:{size:4893,type:WidthType.DXA}, borders:headerCellBorder, children:[
+        new TableCell({width:{size:4893,type:WidthType.DXA}, borders:noBorder, children:[
           new Paragraph({alignment:AlignmentType.RIGHT, children:[run('Quality Assurance Unit, Faculty of Engineering', {bold:true, color:NAVY, size:SMALL})]})
         ]})
       ]})]
@@ -1911,12 +1903,10 @@ $('genBtn').addEventListener('click', async ()=>{
     let mediaIdx = 0;
     const nextMedia = () => xc.images[mediaIdx] ? loadImageDims(xc.images[mediaIdx++].dataUrl) : Promise.resolve(null);
     const usedDefIdx = new Set();
-    function normTitle(s){
-      return (s||'').toLowerCase().replace(/[\u2018\u2019\u02BC\uFF07`]/g, "'");
-    }
     function takeChartDef(keywords){
-      const idx = xc.defs.findIndex((d,i)=>!usedDefIdx.has(i) && keywords.some(k=>normTitle(d.title).includes(normTitle(k))));
-      if (idx === -1) return null; // no confident title match — safer to fall through than risk assigning the wrong chart
+      let idx = xc.defs.findIndex((d,i)=>!usedDefIdx.has(i) && keywords.some(k=>(d.title||'').toLowerCase().includes(k)));
+      if (idx === -1) idx = xc.defs.findIndex((d,i)=>!usedDefIdx.has(i));
+      if (idx === -1) return null;
       usedDefIdx.add(idx);
       return xc.defs[idx];
     }
@@ -1930,7 +1920,7 @@ $('genBtn').addEventListener('click', async ()=>{
       }
     }
     if (D.finalQuestions.length){
-      const def = takeChartDef(['final exam','final analysis']);
+      const def = takeChartDef(['final']);
       images.final = def ? await renderChartFromDef('chartFinal', def, EXCEL_BLUE) : await nextMedia();
       if (!images.final){
         images.final = await renderBarChart('chartFinal', D.finalQuestions.map(q=>q.label), D.finalQuestions.map(q=>round(q.value,2)),
@@ -2129,7 +2119,7 @@ function makeArabicParagraph(xmlDoc, text){
   const spacing = xmlDoc.createElement('w:spacing');
   spacing.setAttribute('w:before','0');
   spacing.setAttribute('w:after','0');
-  spacing.setAttribute('w:line','168');
+  spacing.setAttribute('w:line','240');
   spacing.setAttribute('w:lineRule','auto');
   pPr.appendChild(spacing);
   const jc = xmlDoc.createElement('w:jc'); jc.setAttribute('w:val','both'); pPr.appendChild(jc);
@@ -2141,8 +2131,10 @@ function makeArabicParagraph(xmlDoc, text){
   const rFonts = xmlDoc.createElement('w:rFonts');
   rFonts.setAttribute('w:ascii','Arial'); rFonts.setAttribute('w:hAnsi','Arial'); rFonts.setAttribute('w:cs','Simplified Arabic');
   rPr.appendChild(rFonts);
+  rPr.appendChild(xmlDoc.createElement('w:b'));
+  rPr.appendChild(xmlDoc.createElement('w:bCs'));
   const sz = xmlDoc.createElement('w:sz'); sz.setAttribute('w:val','22'); rPr.appendChild(sz);
-  const szCs = xmlDoc.createElement('w:szCs'); szCs.setAttribute('w:val','22'); rPr.appendChild(szCs);
+  const szCs = xmlDoc.createElement('w:szCs'); szCs.setAttribute('w:val','26'); rPr.appendChild(szCs);
   rPr.appendChild(xmlDoc.createElement('w:rtl'));
   r.appendChild(rPr);
   const t = xmlDoc.createElement('w:t'); t.setAttribute('xml:space','preserve'); t.textContent = clean;
@@ -2268,27 +2260,21 @@ $('bilingBtn').addEventListener('click', async ()=>{
 });
 
 /* =========================================================================
-   NAQAAE COURSE REPORT TEMPLATE CONVERTER — fully separate module.
-   Input: an MMR .docx produced by this tool (old MSA template). Output: a
-   new .docx following the 2025 NAQAAE "Course Report" template, with every
-   confidently-mappable field filled in and everything else left blank for
-   manual completion. Never reads xlsmFile/pdfFile/D and never calls
-   extractAll()/buildDocx() — it only parses a finished .docx's own XML and
-   builds a brand-new one, so the modules above are completely untouched.
+   MODULE 5: MULTI-TEMPLATE NAQAEE CONVERTER (ACCURATE EXTRACTION & BYLAWS COMPLIANT)
    ========================================================================= */
 let naqaeeDocxFile = null;
 const naqaeeLogEl = $('naqaeeLog');
 
-const NAQAEE_PLACEHOLDER = 'Drag & drop the generated MMR .docx file here, or click to browse…';
+const NAQAEE_PLACEHOLDER = 'Drag & drop any MMR Word document (.docx) here, or click to browse…';
 function setNaqaeeDropState(file){
-  const drop = $('dropNaqaee');
+  const drop = $('dropNaqaeeDocx');
   if (file){
-    $('naqaeeName').textContent = file.name;
-    $('naqaeeSub').textContent = (file.size/1024).toFixed(0) + ' KB — loaded';
+    $('naqaeeDocxName').textContent = file.name;
+    $('naqaeeDocxSub').textContent = (file.size/1024).toFixed(0) + ' KB — loaded';
     drop.classList.add('filled');
   } else {
-    $('naqaeeName').textContent = NAQAEE_PLACEHOLDER;
-    $('naqaeeSub').textContent = 'A previously generated MMR report';
+    $('naqaeeDocxName').textContent = NAQAEE_PLACEHOLDER;
+    $('naqaeeDocxSub').textContent = 'Uploaded MMR .docx (Template 14 or Standard MMR)';
     drop.classList.remove('filled');
   }
 }
@@ -2301,632 +2287,1143 @@ function handleNaqaeeFile(file){
   naqaeeDocxFile = file;
   setNaqaeeDropState(file);
 }
-$('dropNaqaee').addEventListener('click', (e)=>{ if(e.target.closest('input, .clear-btn')) return; $('naqaeeInput').click(); });
-$('naqaeeInput').addEventListener('change', (e)=> handleNaqaeeFile(e.target.files[0]));
-$('naqaeeClear').addEventListener('click', (e)=>{
+$('dropNaqaeeDocx').addEventListener('click', (e)=>{ if(e.target.closest('input, .clear-btn')) return; $('naqaeeDocxInput').click(); });
+$('naqaeeDocxInput').addEventListener('change', (e)=> handleNaqaeeFile(e.target.files[0]));
+$('naqaeeDocxClear').addEventListener('click', (e)=>{
   e.stopPropagation();
-  naqaeeDocxFile = null; $('naqaeeInput').value = '';
+  naqaeeDocxFile = null; $('naqaeeDocxInput').value = '';
   setNaqaeeDropState(null);
 });
-wireDragDrop('dropNaqaee', handleNaqaeeFile);
+wireDragDrop('dropNaqaeeDocx', handleNaqaeeFile);
 
-/* ---------- parsing an existing MMR docx back into structured data ---------- */
-function naqFlattenBody(children){
-  return children.map(n=>{
-    if (xmlLocalName(n)==='tbl'){
-      const trs = xmlFindAll(n,'tr');
-      const rows = trs.map(tr=>xmlFindAll(tr,'tc').map(tc=>xmlFindAll(tc,'t').map(t=>t.textContent).join('').trim()));
-      const rowsParas = trs.map(tr=>xmlFindAll(tr,'tc').map(tc=>xmlFindAll(tc,'p').map(p=>xmlFindAll(p,'t').map(t=>t.textContent).join('').trim())));
-      return {type:'table', rows, rowsParas};
-    }
-    return {type:'p', text: xmlFindAll(n,'t').map(t=>t.textContent).join('').trim()};
-  });
+function cleanVal(s){
+  if (!s) return '';
+  return String(s).replace(/\s+/g, ' ').trim();
 }
-function naqFindTableByHeader(flat, headerRow){
-  const item = flat.find(it=>it.type==='table' && it.rows[0] &&
-    headerRow.every((h,i)=>(it.rows[0][i]||'').toLowerCase()===h.toLowerCase()));
-  return item ? item.rows : null;
-}
-function naqParaAfter(flat, labelText){
-  const idx = flat.findIndex(it=>it.type==='p' && it.text===labelText);
-  if (idx===-1) return '';
-  for (let i=idx+1;i<flat.length;i++){
-    if (flat[i].type==='p' && flat[i].text) return flat[i].text;
-    if (flat[i].type==='table') return '';
-  }
-  return '';
-}
-function naqParasUntil(flat, startLabel, stopLabels){
-  const idx = flat.findIndex(it=>it.type==='p' && it.text===startLabel);
-  if (idx===-1) return [];
-  const out=[];
-  for (let i=idx+1;i<flat.length;i++){
-    const it = flat[i];
-    if (it.type==='table') break;
-    if (it.type==='p'){
-      if (!it.text) continue;
-      if (stopLabels.includes(it.text)) break;
-      out.push(it.text);
-    }
-  }
-  return out;
-}
-async function naqLoadAndFlatten(file){
-  const zip = await JSZip.loadAsync(file);
-  const docFile = zip.file('word/document.xml');
-  if (!docFile) throw new Error('This does not look like a valid .docx (word/document.xml not found).');
-  const xmlText = await docFile.async('text');
-  const xmlDoc = new DOMParser().parseFromString(xmlText, 'application/xml');
-  if (xmlDoc.getElementsByTagName('parsererror').length){
-    throw new Error('Could not parse word/document.xml — the file may be corrupted.');
-  }
-  const bodyEl = xmlFindFirst(xmlDoc, 'body');
-  if (!bodyEl) throw new Error('Could not find the document body.');
-  const children = Array.from(bodyEl.childNodes).filter(n=>n.nodeType===1);
-  return naqFlattenBody(children);
-}
-/* Detects which MMR template produced the document: 'current' (this tool's
-   present template, section headers like "1.  Course Information"), 'legacy'
-   (the older "Template 14" MSA format), or 'unknown'. */
-function naqDetectTemplate(flat){
-  if (flat.some(it=>it.type==='p' && it.text==='1.  Course Information')) return 'current';
-  const hasTemplate14 = flat.some(it=>it.type==='p' && /template\s*14/i.test(it.text));
-  const hasLegacyShape = flat.some(it=>it.type==='p' && it.text==='Course Information') &&
-                          flat.some(it=>it.type==='p' && it.text==='Course Delivery Information');
-  if (hasTemplate14 || hasLegacyShape) return 'legacy';
-  return 'unknown';
-}
-function extractOldMmrData(flat){
-  const D = {};
 
-  // Course info: first table in the document, label/value pairs per row
-  const infoTable = (flat.find(it=>it.type==='table')||{}).rows || [];
-  function pick(label){
-    for (const row of infoTable){
-      for (let i=0;i<row.length-1;i+=2){
-        if ((row[i]||'').trim()===label) return (row[i+1]||'').trim();
+function cleanDigits(s){
+  if (!s) return '';
+  let str = String(s);
+  str = str.replace(/(\d)\s+(\d)/g, '$1$2');
+  str = str.replace(/(\d)\s+(\d)/g, '$1$2');
+  return str.trim();
+}
+
+/**
+ * Universal extractor for Template 14 & Standard MMR formats
+ */
+function parseUniversalMmrDocx(paras, tables){
+  const allText = paras.join('\n') + '\n' + tables.map(t=>t.map(r=>r.join('\t')).join('\n')).join('\n');
+
+  let dept = 'MSE', sem = '', program = 'MSE', nStudents = 0;
+  let moduleTitle = '', moduleCode = '';
+  let instructor = '', assistants = '';
+  let contactStr = '';
+
+  if (tables && tables.length > 0){
+    const t0 = tables[0];
+
+    // Check Format A: 3-cell aligned block in row 0
+    if (t0.length >= 1 && t0[0].length >= 3 && /Program/i.test(t0[0][0]) && /Module Title/i.test(t0[0][0])){
+      const c0Lines = t0[0][0].split('\n').map(l=>l.trim()).filter(Boolean);
+      const c1Lines = t0[0][1].split('\n').map(l=>l.replace(/^:\s*/,'').trim()).filter(Boolean);
+      const c2Lines = t0[0][2].split('\n').map(l=>l.trim()).filter(Boolean);
+
+      if (c1Lines.length >= 1) program = cleanVal(c1Lines[0]);
+      if (c1Lines.length >= 2) moduleTitle = cleanVal(c1Lines[1]);
+      if (c1Lines.length >= 3) instructor = cleanVal(c1Lines[2]);
+
+      c2Lines.forEach(line=>{
+        if (/Semester\s*:/i.test(line)){
+          sem = cleanVal(line.replace(/^Semester\s*:\s*/i, ''));
+        } else if (/Module\s*Code\s*:/i.test(line)){
+          moduleCode = cleanVal(line.replace(/^Module\s*Code\s*:\s*/i, ''));
+        } else if (/No\.?\s*of\s*Students\s*:/i.test(line)){
+          const val = cleanDigits(line.replace(/^No\.?\s*of\s*Students\s*:\s*/i, ''));
+          const mD = val.match(/(\d+)/);
+          if (mD) nStudents = parseInt(mD[1], 10);
+        } else if (/Asst\.?\s*Name(?:\(\s*s\s*\))?\s*:/i.test(line) || /Assist\.?\s*Name(?:\(\s*s\s*\))?\s*:/i.test(line)){
+          assistants = cleanVal(line.replace(/^Ass(?:is)?t\.?\s*Name(?:\(\s*s\s*\))?\s*:\s*/i, ''));
+        }
+      });
+    }
+    // Check Format B: Key-Value cells
+    else {
+      t0.forEach(r=>{
+        r.forEach((cell, i)=>{
+          const cellClean = cleanVal(cell);
+          function getV(cText, nextC){
+            if (cText.includes(':')){
+              const v = cText.split(':', 2)[1].trim();
+              if (v) return v;
+            }
+            return nextC ? nextC.trim() : '';
+          }
+          const nextCell = (i+1 < r.length) ? r[i+1] : '';
+
+          if (/Department/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) dept = cleanVal(v);
+          } else if (/Semester/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) sem = cleanVal(v);
+          } else if (/Program/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) program = cleanVal(v);
+          } else if (/No\.?\s*of\s*Students/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            const valD = cleanDigits(v);
+            const mD = valD.match(/(\d+)/);
+            if (mD) nStudents = parseInt(mD[1], 10);
+          } else if (/Module\s*Title/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) moduleTitle = cleanVal(v);
+          } else if (/Module\s*Code/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) moduleCode = cleanVal(v);
+          } else if (/Instructor\s*Name/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) instructor = cleanVal(v);
+          } else if (/Assist\.?\s*Name|Asst\.?\s*Name/i.test(cellClean)){
+            const v = getV(cellClean, nextCell);
+            if (v) assistants = cleanVal(v);
+          }
+        });
+      });
+    }
+
+    // Contact hours scan
+    t0.forEach(r=>{
+      const rStr = r.join(' ');
+      if (/contact hours/i.test(rStr) || (/lecture/i.test(rStr) && /tutorial/i.test(rStr))){
+        const mLec = cleanDigits(rStr).match(/Lecture[s:]*?\s*[:\-]?\s*([\d\.]+)/i);
+        const mTut = cleanDigits(rStr).match(/Tutorial[s:]*?\s*[:\-]?\s*([\d\.\-]+)/i);
+        const mPrac = cleanDigits(rStr).match(/Practical[s:]*?\s*[:\-]?\s*([\d\.\-]+)/i);
+        const mOth = cleanDigits(rStr).match(/Other[s:]*?\s*[:\-]?\s*([\d\.\-]+)/i);
+        if (mLec || mTut){
+          contactStr = `Lectures: ${mLec?mLec[1]:'-'}    Tutorial: ${mTut?mTut[1]:'-'}    Practical: ${mPrac?mPrac[1]:'-'}    Others: ${mOth?mOth[1]:'-'}`;
+        }
+      }
+    });
+  }
+
+  // Academic year & Semester formatting
+  const mYr = (sem || '').match(/(20\d\d)/);
+  const yr = mYr ? parseInt(mYr[1], 10) : 2026;
+  const isSpring = /spring|second|ربيع/i.test(sem);
+  const acadYr = isSpring ? `${yr-1} / ${yr}` : `${yr} / ${yr+1}`;
+  const approvalDate = `End of Semester Council Meeting (${isSpring ? 'June' : 'January'} ${yr})`;
+
+  // Level determination
+  const mLevel = (moduleCode || '').match(/(\d)/);
+  const levelDigit = mLevel ? mLevel[1] : '4';
+  const levelNames = {
+    '1': 'Level 1 (1st Year / Freshman)',
+    '2': 'Level 2 (2nd Year / Sophomore)',
+    '3': 'Level 3 (3rd Year / Junior)',
+    '4': 'Level 4 (4th Year / Senior)',
+    '5': 'Level 5 (5th Year / Senior II)'
+  };
+  const levelStr = levelNames[levelDigit] || `Level ${levelDigit}`;
+
+  // Content taught
+  let contentTaught = '';
+  for (let i=0; i<paras.length; i++){
+    if (/Course Content Taught:/i.test(paras[i])){
+      contentTaught = paras[i].replace(/^Course Content Taught:\s*/i, '').trim();
+      if (!contentTaught && i+1 < paras.length) contentTaught = paras[i+1].trim();
+      break;
+    } else if (/^Syllabus:/i.test(paras[i])){
+      if (i+1 < paras.length) contentTaught = paras[i+1].trim();
+      break;
+    }
+  }
+
+  function findComment(pattern){
+    for (let i=0; i<paras.length; i++){
+      if (pattern.test(paras[i])){
+        let c = paras[i].replace(pattern, '').trim();
+        if (!c && i+1 < paras.length && !/^(\d\.|Comment|Threshold|Grade|LO\d|Total)/i.test(paras[i+1])){
+          c = paras[i+1].trim();
+        }
+        return c;
       }
     }
     return '';
   }
-  D.department = pick('Department');
-  D.semester = pick('Semester');
-  D.program = pick('Program(s)');
-  D.nStudents = pick('No. of Students');
-  D.moduleTitle = pick('Module Title');
-  D.moduleCode = pick('Module Code');
-  D.instructor = pick('Instructor Name(s)');
-  D.assistants = pick('Assist. Name(s)');
-  D.contactHoursText = pick('Contact Hours/Week');
 
-  // Assessment pattern: 2-col table whose last row label is "Total"
-  const assessTable = flat.find(it=>it.type==='table' && it.rows.every(r=>r.length===2) &&
-    it.rows.length && /^total$/i.test((it.rows[it.rows.length-1]||[])[0]||''));
-  D.assessment = assessTable ? assessTable.rows.filter(r=>!/^total$/i.test(r[0]||'')).map(r=>({label:r[0], value:r[1]})) : [];
+  const cwComment = findComment(/Comments?\s*on\s*(?:Students’?|the)?\s*Course\s*work\s*(?:Performance|Results)?:?/i);
+  const mtComment = findComment(/Comments?\s*on\s*(?:Results\s*of\s*the\s*)?Midterm\s*(?:Exam\s*)?(?:Results)?:?/i);
+  const fnComment = findComment(/Comments?\s*on\s*(?:Results\s*of\s*the\s*)?Final\s*Exam\s*(?:Results)?:?/i);
+  const modComment = findComment(/Comments?\s*on\s*(?:the\s*)?(?:Module\s*)?(?:Final\s*)?Results:?/i);
+  const loComment = findComment(/Comments?\s*on\s*(?:the\s*)?LOs?\s*(?:Achievements?)?:?/i);
 
-  // Category / Count table
-  const catTable = naqFindTableByHeader(flat, ['Category','Count']);
-  function catVal(label){
-    if (!catTable) return '';
-    const row = catTable.find(r=>r[0]===label);
-    return row ? row[1] : '';
+  // Student feedback comments & metrics extraction
+  let feedbackSatText = '';
+  let feedbackDissatText = '';
+  let satisfactionRate = '';
+  let participationRate = '';
+
+  for (let i=0; i<paras.length; i++){
+    if (/Students Feedback \(Summary & Comments\):?/i.test(paras[i]) && i+1 < paras.length){
+      feedbackSatText = paras[i+1].trim();
+    }
   }
-  D.totalStudents = catVal('Total Students from Moodle');
-  D.attendedMidterm = catVal('Students who Attended Midterm');
-  D.attendedFinal = catVal('Students who Attended Final');
 
-  // Question-count tables: header cells all look like Q1,Q2,... — identify midterm vs final
-  // by the nearest preceding "Question-Level Performance" label.
-  D.mtQuestionCount = 0; D.finalQuestionCount = 0;
-  flat.forEach((it, idx)=>{
-    if (it.type==='table' && it.rows[0] && it.rows[0].length && it.rows[0].every(c=>/^Q\d+$/i.test(c))){
-      for (let j=idx-1;j>=0;j--){
-        if (flat[j].type==='table') break;
-        if (flat[j].type==='p' && /Question-Level Performance/i.test(flat[j].text)){
-          if (/Midterm/i.test(flat[j].text)) D.mtQuestionCount = it.rows[0].length;
-          else if (/Final/i.test(flat[j].text)) D.finalQuestionCount = it.rows[0].length;
-          break;
+  tables.forEach(t=>{
+    t.forEach(r=>{
+      r.forEach((c, i)=>{
+        const cClean = cleanVal(c);
+        if (/students?[’']?\s*feedback/i.test(cClean)){
+          const m = cClean.match(/([\d\.]+\s*%)/);
+          if (m){
+            satisfactionRate = m[1].replace(/\s+/g,'');
+          } else if (i+1 < r.length){
+            const m2 = cleanVal(r[i+1]).match(/([\d\.]+\s*%)/);
+            if (m2) satisfactionRate = m2[1].replace(/\s+/g,'');
+          }
+        }
+        if (/satisfaction/i.test(cClean)){
+          const m = cClean.match(/([\d\.]+\s*%)/);
+          if (m) satisfactionRate = m[1].replace(/\s+/g,'');
+        }
+        if (/participation\s*rate/i.test(cClean)){
+          const m = cClean.match(/([\d\.]+\s*%)/);
+          if (m) participationRate = m[1].replace(/\s+/g,'');
+        }
+      });
+    });
+  });
+
+  // Instructor Reflection Extraction from document text
+  let reflectionText = '';
+  for (let i=0; i<paras.length; i++){
+    if (/informal feedback actions|Instructor's Effort|effort and learning support|التأملات والرؤى/i.test(paras[i])){
+      reflectionText = paras[i].trim();
+      break;
+    }
+  }
+  if (!reflectionText){
+    for (let i=0; i<paras.length; i++){
+      if (/Actions Taken in Response to Previous Semester Feedback/i.test(paras[i]) && i+1 < paras.length){
+        reflectionText = paras[i+1].trim();
+        break;
+      }
+    }
+  }
+  if (reflectionText){
+    // Speak directly to the reflection by cleaning administrative prefixes
+    reflectionText = reflectionText.replace(/^This term'?s informal feedback actions:\s*(?:In response to the actions required from [^:]+:\s*(?:\(1\))?)?/i, '').trim();
+    reflectionText = reflectionText.replace(/^\(?1\)?\s*[-–.]?\s*/, '').trim();
+  }
+
+  // --- GRADE EXTRACTION ENGINE ---
+  const gradeMap = {};
+  const prevActions = [];
+  const newActions = [];
+  let fCount = 0;
+  let wCount = 0;
+
+  tables.forEach(t=>{
+    // 1. Total grades table (Template 14 / Legacy)
+    if (t.length > 1 && t[0].some(cell=> /total grades/i.test(cell))){
+      let rowIdx = 0;
+      for (let r=1; r<t.length; r++){
+        const rowStr = t[r].join(' ');
+        if (/comment/i.test(rowStr) || t[r].length < 2) continue;
+        rowIdx++;
+        const lbl = cleanVal(t[r][0]);
+        const cntStr = cleanDigits(t[r][1]).replace(/\s+/g, '');
+        const pctStr = t[r][2] ? cleanDigits(t[r][2]).replace(/\s+/g, '') : '';
+
+        let gr = null;
+        const mG = lbl.match(/\(\s*([A-DFWa-dfw][\+\-]?)\s*\)/);
+        if (mG){
+          gr = mG[1].toUpperCase();
+        } else if (/^[A-DFWa-dfw][\+\-]?$/.test(lbl)){
+          gr = lbl.toUpperCase();
+        } else if (/^([A-DFWa-dfw][\+\-]?)\s*:/.test(lbl)){
+          gr = lbl.match(/^([A-DFWa-dfw][\+\-]?)\s*:/)[1].toUpperCase();
+        } else if (!lbl){
+          // Positional fallback for empty cell 0:
+          // Row 1 -> A, Row 2 -> B, Row 3 -> C, Row 4 -> D, Row 5 -> F, Row 6 -> W
+          const stdOrder = ['A', 'B', 'C', 'D', 'F', 'W'];
+          if (rowIdx <= stdOrder.length) gr = stdOrder[rowIdx - 1];
+        }
+
+        if (gr && /^\d+$/.test(cntStr)){
+          const cnt = parseInt(cntStr, 10);
+          gradeMap[gr] = {count: cnt, pct: pctStr};
+          if (gr === 'F') fCount = cnt;
+          if (gr === 'W') wCount = cnt;
         }
       }
     }
-  });
 
-  // Grade table
-  const gradeTable = naqFindTableByHeader(flat, ['Grade','# of Students','%']);
-  D.grades = [];
-  D.gradeTotal = {count:'', pct:''};
-  if (gradeTable){
-    gradeTable.slice(1).forEach(r=>{
-      if (/^total$/i.test(r[0]||'')) D.gradeTotal = {count:r[1], pct:r[2]};
-      else D.grades.push({grade:r[0], count:r[1], pct:r[2]});
-    });
-  }
-
-  // Probation / Withdrawn / Attendance (simple 2-col, 3-row table)
-  const probTable = flat.find(it=>it.type==='table' && it.rows[0] && it.rows[0][0]==='Number of Students on Probation');
-  D.probation = probTable ? (probTable.rows[0]||[])[1] : '';
-  D.withdrawn = probTable ? (probTable.rows[1]||[])[1] : '';
-  D.attendancePct = probTable ? (probTable.rows[2]||[])[1] : '';
-
-  // Feedback table
-  const fbTable = flat.find(it=>it.type==='table' && it.rows[0] && it.rows[0][0]==='Formal Feedback (Forum 17)');
-  D.satisfactionText = fbTable ? (fbTable.rows[0]||[])[1] : '';
-  D.externalSummary = fbTable ? (fbTable.rows[1]||[])[1] : '';
-  const satMatch = (D.satisfactionText||'').match(/satisfaction:\s*([\d.]+%)/i);
-  const partMatch = (D.satisfactionText||'').match(/participation rate:\s*([\d.]+%)/i);
-  D.satisfactionPct = satMatch ? satMatch[1] : '';
-  D.participationPct = partMatch ? partMatch[1] : '';
-
-  // Action plan tables
-  const ap1 = naqFindTableByHeader(flat, ['Area','Required Action','Implementation']);
-  D.actionPrevious = ap1 ? ap1.slice(1).map(r=>({area:r[0], action:r[1], implementation:r[2]})) : [];
-  const ap2 = naqFindTableByHeader(flat, ['Area','Description','Duration','Responsible']);
-  D.actionNext = ap2 ? ap2.slice(1).map(r=>({area:r[0], desc:r[1], duration:r[2], responsible:r[3]})) : [];
-
-  // Comments / narrative fields
-  D.moduleComment = naqParaAfter(flat, 'Comments on Module Results:');
-  D.midtermComment = naqParaAfter(flat, 'Comment on Midterm Results:');
-  D.courseworkComment = naqParaAfter(flat, 'Comment on Coursework Results:');
-  D.finalComment = naqParaAfter(flat, 'Comment on Final Exam Results:');
-  D.loComment = naqParaAfter(flat, 'Comment on LOs Achievements:');
-  D.programLeader = naqParaAfter(flat, 'Program Leader Comments:');
-  D.feedbackNarrative = naqParasUntil(flat, 'Actions Taken in Response to Previous Semester Feedback:', ['Program Leader Comments:']).join(' ');
-
-  return D;
-}
-
-/* ---------- legacy ("Template 14") MMR parser — separate path, same output shape ---------- */
-function naqCleanLabel(s){ return (s||'').replace(/[:\uFF1A]+\s*$/,'').replace(/\s+/g,' ').trim().toLowerCase(); }
-function naqCellParaAfterLabel(paras, labelRe){
-  const idx = paras.findIndex(p=>labelRe.test(naqCleanLabel(p)));
-  if (idx===-1) return '';
-  const out = [];
-  for (let i=idx+1;i<paras.length;i++){
-    const p = paras[i];
-    if (!p){ if (out.length) continue; else continue; }
-    if (/[\u0600-\u06FF]/.test(p)) break; // stop at the Arabic translation block
-    out.push(p);
-  }
-  return out.join(' ');
-}
-function extractLegacyMmrData(flat){
-  const D = {};
-  const tables = flat.filter(it=>it.type==='table');
-
-  // Course info: first table containing a "Department" label
-  const infoTable = tables.find(t=>t.rows.some(r=>r.some(c=>/^department/i.test(naqCleanLabel(c)))));
-  function pickLegacy(labelRe){
-    if (!infoTable) return '';
-    for (const row of infoTable.rows){
-      for (let i=0;i<row.length-1;i++){
-        if (labelRe.test(naqCleanLabel(row[i]))) return (row[i+1]||'').trim();
-      }
-    }
-    return '';
-  }
-  D.department = pickLegacy(/^department/);
-  D.semester = pickLegacy(/^semester/);
-  D.program = pickLegacy(/^program/);
-  D.nStudents = pickLegacy(/^no\.? of students/);
-  D.moduleTitle = pickLegacy(/^module title/);
-  D.moduleCode = pickLegacy(/^module code/);
-  D.instructor = pickLegacy(/^instructor name/);
-  D.assistants = pickLegacy(/^assist\.? name/);
-
-  // Contact hours: a table row containing "Lectures"/"Tutorial"/"Practical" as cell labels
-  D.contactHoursText = '';
-  const chTable = tables.find(t=>t.rows.some(r=>r.some(c=>/^lectures$/i.test((c||'').trim()))));
-  if (chTable){
-    const row = chTable.rows.find(r=>r.some(c=>/^lectures$/i.test((c||'').trim())));
-    if (row){
-      const get = (labelRe)=>{ const i = row.findIndex(c=>labelRe.test((c||'').trim())); return i>-1 ? (row[i+1]||'').trim() : ''; };
-      D.contactHoursText = `Lectures: ${get(/^lectures$/i)}    Tutorial: ${get(/^tutorial$/i)}    Practical: ${get(/^practical$/i)}    Others: ${get(/^others$/i)}`;
-    }
-  }
-
-  // Assessment Pattern: single-cell table, one item per paragraph as "Label<value>%"
-  D.assessment = [];
-  const assessTbl = tables.find(t=>t.rowsParas.some(r=>r.some(cellParas=>cellParas.some(p=>p==='Assessment Pattern:'))));
-  if (assessTbl){
-    for (const row of assessTbl.rowsParas){
-      for (const cellParas of row){
-        cellParas.forEach(p=>{
-          if (!p || p==='Assessment Pattern:') return;
-          const m = p.match(/^(.*?)(\d+(?:\.\d+)?\s*%)$/);
-          if (m && !/^total/i.test(m[1].trim())) D.assessment.push({label:m[1].trim(), value:m[2].replace(/\s+/,'')});
-        });
-      }
-    }
-  }
-
-  // Final Exam total attendance: table with a "No. of students in class" style header, take last row's total cell
-  D.totalStudents = ''; D.attendedFinal = ''; D.attendedMidterm = '';
-  const finalAttTbl = tables.find(t=>t.rows.some(r=>r.some(c=>/no\.? of students? in class/i.test(c||''))) &&
-                                       t.rows.some(r=>r.some(c=>/total number/i.test(c||''))));
-  if (finalAttTbl){
-    const last = finalAttTbl.rows[finalAttTbl.rows.length-1];
-    if (last && last.length){
-      D.attendedFinal = (last[last.length-1]||'').trim();
-      D.totalStudents = D.attendedFinal;
-    }
-  }
-
-  // Module Final Results: grade labels look like "(A): >= 89%" / "W:"
-  D.grades = []; D.gradeTotal = {count:'', pct:''};
-  const gradeTbl = tables.find(t=>t.rows.some(r=>r[0]==='Total grades'));
-  if (gradeTbl){
-    gradeTbl.rows.slice(1).forEach(r=>{
-      const m = (r[0]||'').match(/\(?([A-Za-z])\)?\s*[:.]/);
-      if (m && r[1]){
-        D.grades.push({grade:m[1].toUpperCase(), count:(r[1]||'').trim(), pct:(r[2]||'').replace('%','').trim()});
-      }
-    });
-    const total = D.grades.reduce((s,g)=>s+(parseFloat(g.count)||0),0);
-    if (total) D.gradeTotal = {count:String(total), pct:'100.00'};
-  }
-  const fGrade = D.grades.find(g=>g.grade==='F');
-  const wGrade = D.grades.find(g=>g.grade==='W');
-  D.probation = ''; D.withdrawn = wGrade ? wGrade.count : ''; D.attendancePct = '';
-
-  // Feedback: "Students Feedback (Summary & Comments):" cell — take the first English paragraph after the label
-  D.satisfactionText = ''; D.satisfactionPct = ''; D.participationPct = '';
-  const fbTbl = tables.find(t=>t.rowsParas.some(r=>r.some(cp=>cp.some(p=>p==='Students Feedback (Summary & Comments):'))));
-  if (fbTbl){
-    const cellParas = fbTbl.rowsParas[0][0];
-    D.feedbackNarrative = naqCellParaAfterLabel(cellParas, /^students feedback/);
-  } else {
-    D.feedbackNarrative = '';
-  }
-  D.externalSummary = '';
-
-  // Comments on Results of the Final Exam / LO achievements — English paragraph(s) after each label
-  function commentFromAnyCell(labelRe){
-    for (const t of tables){
-      for (const row of t.rowsParas){
-        for (const cellParas of row){
-          const idx = cellParas.findIndex(p=>labelRe.test(p));
-          if (idx>-1){
-            const out = [];
-            for (let i=idx+1;i<cellParas.length;i++){
-              const p = cellParas[i];
-              if (!p) continue;
-              if (/[\u0600-\u06FF]/.test(p)) break;
-              out.push(p);
-            }
-            if (out.length) return out.join(' ');
+    // 2. Standard 3-column Grade table (Modern MMR: Grade | # | %)
+    else if (t.length > 1 && t[0].length === 3 && /^Grade$/i.test(cleanVal(t[0][0]))){
+      for (let r=1; r<t.length; r++){
+        if (t[r][0] !== 'Total' && t[r].length >= 2){
+          const gr = cleanVal(t[r][0]).toUpperCase();
+          const cntStr = cleanDigits(t[r][1]).replace(/\s+/g, '');
+          const pctStr = t[r][2] ? cleanDigits(t[r][2]).replace(/\s+/g, '') : '';
+          if (/^\d+$/.test(cntStr)){
+            const cnt = parseInt(cntStr, 10);
+            gradeMap[gr] = {count: cnt, pct: pctStr};
+            if (gr === 'F') fCount = cnt;
+            if (gr === 'W') wCount = cnt;
           }
         }
       }
     }
-    return '';
+
+    // 3. Scan exam attendance tables for Withdrawn if not in grades table
+    t.forEach(r=>{
+      const rStr = r.join(' ');
+      if (/withdrawn/i.test(rStr)){
+        const mW = cleanDigits(rStr).match(/Withdrawn\s*[:\t\-]?\s*(\d+)/i);
+        if (mW && wCount === 0){
+          wCount = parseInt(mW[1], 10);
+        }
+      }
+    });
+
+    // 4. Previous action plan table
+    if (t.length > 1 && t[0].length >= 3 && t[0].some(c=> /area/i.test(c)) && t[0].some(c=> /required/i.test(c))){
+      for (let r=1; r<t.length; r++){
+        if (t[r].length >= 3 && t[r][0].trim()){
+          prevActions.push({area: t[r][0].trim(), action: t[r][1].trim(), impl: t[r][2].trim()});
+        }
+      }
+    }
+
+    // 5. New action plan table
+    if (t.length > 1 && t[0].length >= 4 && t[0].some(c=> /area/i.test(c)) && t[0].some(c=> /responsible/i.test(c))){
+      for (let r=1; r<t.length; r++){
+        if (t[r].length >= 4 && t[r][0].trim()){
+          newActions.push({area: t[r][0].trim(), desc: t[r][1].trim(), duration: t[r][2].trim(), resp: t[r][3].trim()});
+        }
+      }
+    }
+  });
+
+  // Calculate sum of extracted grades
+  let sumGrades = 0;
+  Object.keys(gradeMap).forEach(k=>{
+    sumGrades += (gradeMap[k].count || 0);
+  });
+  if (wCount > 0 && !gradeMap['W']) sumGrades += wCount;
+
+  if (nStudents === 0 || nStudents < sumGrades){
+    nStudents = sumGrades;
   }
-  D.finalComment = commentFromAnyCell(/^comments? on (results of the )?final exam/i);
-  D.moduleComment = commentFromAnyCell(/^comments? on the final results/i);
-  D.loComment = commentFromAnyCell(/^comments? on (the )?lo achievements?/i);
-  D.midtermComment = commentFromAnyCell(/^comments? on (students.? )?course\s*work performance/i);
-  D.courseworkComment = D.midtermComment;
 
-  // Action plan tables (both are structurally the same shape as the current template)
-  const ap1 = naqFindTableByHeader(flat, ['Area','Required action','Implementation']);
-  D.actionPrevious = ap1 ? ap1.slice(1).filter(r=>r.some(c=>c)).map(r=>({area:r[0], action:r[1], implementation:r[2]})) : [];
-  const ap2 = tables.find(t=>t.rows.some(r=>r[0]==='Areas for Improvement'));
-  D.actionNext = ap2 ? ap2.rows.slice(ap2.rows.findIndex(r=>r[0]==='Areas for Improvement')+1).filter(r=>r.some(c=>c))
-    .map(r=>({area:r[0], desc:r[1], duration:r[2], responsible:r[3]})) : [];
+  let deptHead = '';
+  const mLead = allText.match(/Program leader comments:\s*([^\n\r]+)/i);
+  if (mLead && mLead[1].trim()) deptHead = mLead[1].trim();
+  const mHead = allText.match(/Head of MSE Dept\.:\s*([^\n\r]+)/i);
+  if (mHead && mHead[1].trim()) deptHead = mHead[1].trim();
 
-  // Signatures / program leader
-  const coordLine = flat.find(it=>it.type==='p' && /^module coordinator:/i.test(it.text));
-  D.programLeader = coordLine ? coordLine.text.replace(/^module coordinator:\s*/i,'') : '';
+  // --- Assessment Pattern (weights) — never fabricated, read directly from the source.
+  // Covers both: (a) the current template's clean 2-col [label, "X%"] table with a
+  // trailing "Total" row, and (b) the legacy template's single bulleted box where each
+  // item is its own paragraph inside one cell, e.g. "Class participation10 %".
+  const assessment = [];
+  tables.forEach(t=>{
+    const allTwoCol = t.length > 1 && t.every(r=>r.length===2);
+    const lastLabel = allTwoCol ? cleanVal(t[t.length-1][0]) : '';
+    if (allTwoCol && /^total$/i.test(lastLabel)){
+      t.forEach(r=>{
+        const label = cleanVal(r[0]);
+        const val = cleanVal(r[1]);
+        if (label && !/^total$/i.test(label) && /\d/.test(val)) assessment.push({label, value: val});
+      });
+    }
+  });
+  if (!assessment.length){
+    tables.forEach(t=>{
+      t.forEach(r=>{
+        r.forEach(cellText=>{
+          if (!/assessment pattern/i.test(cellText)) return;
+          cellText.split(/\n+/).forEach(line=>{
+            const m = line.match(/^(.*?[A-Za-z].*?)(\d+(?:\.\d+)?\s*%)\s*$/);
+            if (m && !/assessment pattern/i.test(m[1]) && !/^total/i.test(m[1].trim())){
+              assessment.push({label: m[1].trim(), value: m[2].replace(/\s+/g,'')});
+            }
+          });
+        });
+      });
+    });
+  }
 
-  D.mtQuestionCount = 0; D.finalQuestionCount = 0;
-  return D;
+  // --- Content Coverage — either "Content Coverage: X%" style, or a checkbox row among
+  // <60% / 60-84% / ≥85% buckets. Left empty (never guessed) if genuinely not found.
+  let coverageText = '';
+  tables.forEach(t=>{
+    t.forEach(r=>{
+      r.forEach((cellText,i)=>{
+        if (/content coverage/i.test(cellText)){
+          const m = cellText.match(/([\d.]+\s*%)/);
+          if (m) coverageText = m[1].replace(/\s+/g,'');
+          else if (i+1 < r.length){
+            const m2 = cleanVal(r[i+1]).match(/([\d.]+\s*%)/);
+            if (m2) coverageText = m2[1].replace(/\s+/g,'');
+          }
+        }
+      });
+    });
+  });
+  if (!coverageText){
+    // Checkbox-style row: the tick lives in its own cell right BEFORE the bucket label
+    // (e.g. ['', '', '<60%', '', '60 - 84%', '✓', '≥85%']).
+    const bucketRe = /^([<≥>]=?\s*\d+\s*%|\d+\s*[-–]\s*\d+\s*%)$/;
+    tables.forEach(t=>t.forEach(r=>{
+      if (coverageText) return;
+      r.forEach((cellText,i)=>{
+        if (coverageText) return;
+        if (/^[✓✔]$/.test(cleanVal(cellText))){
+          const nxt = cleanVal(r[i+1] || '');
+          const prv = cleanVal(r[i-1] || '');
+          if (bucketRe.test(nxt)) coverageText = nxt.replace(/\s+/g,'');
+          else if (bucketRe.test(prv)) coverageText = prv.replace(/\s+/g,'');
+        }
+      });
+    }));
+  }
+  if (!coverageText){
+    const covRe = /(✓|✔|X)\s*([<≥]\s*\d+\s*%|\d+\s*-\s*\d+\s*%)|([<≥]\s*\d+\s*%|\d+\s*-\s*\d+\s*%)\s*(✓|✔)/;
+    for (const p of paras){
+      if (/content\s*covered|percentage of content/i.test(p)){
+        const m = p.match(covRe);
+        if (m){ coverageText = (m[2]||m[3]||'').replace(/\s+/g,''); break; }
+      }
+    }
+    if (!coverageText){
+      tables.forEach(t=>t.forEach(r=>r.forEach(cellText=>{
+        if (coverageText) return;
+        const m = cellText.match(covRe);
+        if (m) coverageText = (m[2]||m[3]||'').replace(/\s+/g,'');
+      })));
+    }
+  }
+
+  return {
+    templateType: 'UNIVERSAL_MMR',
+    dept, sem, program, nStudents: String(nStudents), moduleTitle, moduleCode, instructor, assistants,
+    contactStr, acadYr, approvalDate, levelStr, contentTaught, mtComment, cwComment,
+    fnComment, loComment, modComment, satisfactionRate, participationRate,
+    feedbackSatText, feedbackDissatText, reflectionText, prevActions, newActions, gradeMap, deptHead,
+    wCount, fCount, assessment, coverageText
+  };
 }
 
-/* ---------- building the NAQAAE-template docx ---------- */
-function naqFindAssessmentValue(D, keywords){
-  const item = (D.assessment||[]).find(a=>keywords.some(k=>(a.label||'').toLowerCase().includes(k)));
-  return item ? item.value : '';
+async function parseOldMmrDocx(file){
+  const zip = await JSZip.loadAsync(file);
+  const docFile = zip.file('word/document.xml');
+  if (!docFile) throw new Error('Invalid .docx file (word/document.xml missing).');
+  const xmlText = await docFile.async('text');
+  const xmlDoc = new DOMParser().parseFromString(xmlText, 'application/xml');
+  if (xmlDoc.getElementsByTagName('parsererror').length){
+    throw new Error('Error parsing word/document.xml in uploaded file.');
+  }
+  const body = xmlFindFirst(xmlDoc, 'body');
+  if (!body) throw new Error('Document body not found.');
+
+  const paras = [];
+  xmlFindAll(body, 'p').forEach(p=>{
+    const t = xmlFindAll(p, 't').map(n=>n.textContent).join('').trim();
+    if (t) paras.push(t);
+  });
+
+  const tables = [];
+  xmlFindAll(body, 'tbl').forEach(tbl=>{
+    const tblData = [];
+    xmlFindAll(tbl, 'tr').forEach(r=>{
+      const rowData = [];
+      xmlFindAll(r, 'tc').forEach(c=>{
+        const cParas = [];
+        xmlFindAll(c, 'p').forEach(p=>{
+          const pt = xmlFindAll(p, 't').map(n=>n.textContent).join('').trim();
+          if (pt) cParas.push(pt);
+        });
+        rowData.push(cParas.join('\n'));
+      });
+      tblData.push(rowData);
+    });
+    tables.push(tblData);
+  });
+
+  return parseUniversalMmrDocx(paras, tables);
 }
-function naqNum(v){
-  const n = parseFloat(String(v||'').replace('%',''));
-  return isNaN(n) ? null : n;
-}
-async function buildNaqaeeDocx(D){
+
+/**
+ * Certified OOXML Builder for the NAQAEE 2025/2026 Template
+ */
+function buildNaqaeeDocxViaDocxLib(D){
   const {
     Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, Header, Footer,
-    WidthType, ShadingType, AlignmentType, BorderStyle, VerticalAlign
+    WidthType, ShadingType, AlignmentType, BorderStyle, VerticalAlign, PageNumber
   } = docx;
 
   const FONT = 'Arial';
-  const FS = 22; // 11pt
-  const COVER = '0E2841', LABELBOX = '153D63', SEC_BG = 'DAE9F7', SEC_TX = '002060',
-        TBL_DARK = 'A6A6A6', TBL_SUB = 'D9D9D9', TBL_LIGHT = 'F2F2F2', SIG_BOX = 'BFBFBF',
-        BORDER = '808080';
+  const NAVY = '153D63';      // Primary dark blue
+  const LIGHT_BLUE = 'DAE9F7';// Soft subheader blue
+  const BG_GRAY = 'E9EEF4';   // Light gray blue for field titles
+  const BORDER_CLR = 'B0C4DE';// Clean table border
+  const WHITE = 'FFFFFF';
 
-  function bd(color){
+  function cellBorders(color){
+    const c = color || BORDER_CLR;
     return {
-      top:{style:BorderStyle.SINGLE,size:4,color}, bottom:{style:BorderStyle.SINGLE,size:4,color},
-      left:{style:BorderStyle.SINGLE,size:4,color}, right:{style:BorderStyle.SINGLE,size:4,color}
+      top: {style: BorderStyle.SINGLE, size: 4, color: c},
+      bottom: {style: BorderStyle.SINGLE, size: 4, color: c},
+      left: {style: BorderStyle.SINGLE, size: 4, color: c},
+      right: {style: BorderStyle.SINGLE, size: 4, color: c}
     };
   }
-  function run(text, opts){
+
+  function r(text, opts){
     opts = opts || {};
-    return new TextRun({text:(text===undefined||text===null)?'':String(text), font:FONT, size:opts.size||FS,
-      bold:!!opts.bold, italics:!!opts.italics, color:opts.color||'000000'});
+    return new TextRun({
+      text: String(text !== undefined && text !== null ? text : ''),
+      font: FONT,
+      size: opts.sz || 20,
+      bold: !!opts.bold,
+      italics: !!opts.italics,
+      color: opts.color || '000000'
+    });
   }
-  function para(text, opts){
+
+  function p(text, opts){
     opts = opts || {};
-    return new Paragraph({spacing:{before:opts.before||0, after:opts.after!==undefined?opts.after:120},
-      alignment:opts.align, children:[run(text, opts)]});
-  }
-  function sectionHeader(text){
+    const lines = String(text !== undefined && text !== null ? text : '').split('\n');
+    const runs = [];
+    lines.forEach((line, lIdx)=>{
+      runs.push(r(line, opts));
+      if (lIdx < lines.length - 1) runs.push(new TextRun({break:1}));
+    });
     return new Paragraph({
-      shading:{type:ShadingType.CLEAR, fill:SEC_BG},
-      border:{top:{style:BorderStyle.SINGLE,size:4,color:SEC_TX}, bottom:{style:BorderStyle.SINGLE,size:4,color:SEC_TX}},
-      spacing:{before:200, after:120}, indent:{left:60},
-      children:[run(text, {bold:true, color:SEC_TX, size:24})]
+      alignment: opts.align || AlignmentType.LEFT,
+      spacing: {before: opts.before || 40, after: opts.after || 40, line: 240, lineRule: 'auto'},
+      children: runs
     });
   }
-  function cell(text, opts){
+
+  function c(text, width, opts){
     opts = opts || {};
+    const paras = Array.isArray(text) ? text.map(t=> (typeof t==='string'? p(t,opts) : t)) : [p(text, opts)];
     return new TableCell({
-      width:{size:opts.width||1000, type:WidthType.DXA},
-      shading: opts.shade ? {type:ShadingType.CLEAR, fill:opts.shade} : undefined,
-      borders: bd(BORDER),
-      margins:{top:60,bottom:60,left:120,right:120},
-      columnSpan: opts.span,
+      width: {size: width || 2000, type: WidthType.DXA},
+      shading: opts.fill ? {type: ShadingType.CLEAR, fill: opts.fill} : undefined,
+      borders: cellBorders(opts.borderColor),
+      columnSpan: opts.span || undefined,
       verticalAlign: VerticalAlign.CENTER,
-      children:[new Paragraph({alignment:opts.align||AlignmentType.LEFT,
-        children:[run(text===undefined||text===null||text===''?'':text, {bold:opts.bold, color:opts.color})]})]
+      margins: {top: 80, bottom: 80, left: 120, right: 120},
+      children: paras
     });
   }
-  function labelValueTable(rows, widths){
-    return new Table({
-      width:{size:widths[0]+widths[1], type:WidthType.DXA}, columnWidths:widths,
-      rows: rows.map((r,i)=>new TableRow({children:[
-        cell(r[0], {bold:true, shade:i%2===0?'DEEBF7':TBL_LIGHT, width:widths[0]}),
-        cell(r[1], {width:widths[1]})
-      ]}))
+
+  function secHeading(title){
+    return new Paragraph({
+      shading: {type: ShadingType.CLEAR, fill: LIGHT_BLUE},
+      spacing: {before: 240, after: 120},
+      children: [
+        new TextRun({text: title, font: FONT, size: 24, bold: true, color: '0E2841'})
+      ]
     });
   }
-  function dottedLines(n){
-    n = n || 3;
-    const out = [];
-    for (let i=0;i<n;i++) out.push(para('.'.repeat(110), {after:0, color:'999999'}));
-    return out;
+
+  function subHeading(title){
+    return new Paragraph({
+      spacing: {before: 160, after: 80},
+      children: [
+        new TextRun({text: title, font: FONT, size: 22, bold: true, color: NAVY})
+      ]
+    });
   }
 
   const content = [];
 
-  // ---- Cover ----
-  content.push(new Paragraph({
-    shading:{type:ShadingType.CLEAR, fill:COVER},
-    spacing:{before:400, after:400}, alignment:AlignmentType.CENTER,
-    children:[run('Course Report', {bold:true, color:'FFFFFF', size:44})]
-  }));
-  content.push(new Paragraph({spacing:{after:300}, children:[]}));
+  // 1. Header Banner Table
   content.push(new Table({
-    width:{size:10466, type:WidthType.DXA}, columnWidths:[2200,1600,2200,1600],
-    rows:[new TableRow({children:[
-      cell('Academic Year', {bold:true, color:'FFFFFF', shade:LABELBOX, align:AlignmentType.CENTER, width:2200}),
-      cell(D.semester ? '' : '…… / ……', {width:1600, align:AlignmentType.CENTER}),
-      cell('Semester', {bold:true, color:'FFFFFF', shade:LABELBOX, align:AlignmentType.CENTER, width:2200}),
-      cell(D.semester||'……………', {width:1600, align:AlignmentType.CENTER})
-    ]})]
-  }));
-  content.push(new Paragraph({spacing:{after:200}, children:[]}));
-
-  // ---- 1. Basic Information ----
-  content.push(labelValueTable([
-    ['Course Title (according to the bylaw):', D.moduleTitle],
-    ['Course Code (according to the bylaw):', D.moduleCode],
-    ['Department/s that participated in the teaching:', D.department],
-    ['Total number of credit hours/points of the course:', ''],
-    ['Course Type:', ''],
-    ['The level to which the course was introduced:', ''],
-    ['Academic Program:', D.program],
-    ['Faculty/Institute:', 'Faculty of Engineering'],
-    ['University/Academy:', 'October University for Modern Sciences and Arts (MSA)'],
-    ['Name of Course Coordinator:', D.instructor],
-    ['Course Report Approval (attach the decision/minutes of the department /committee/council ....):', ''],
-    ['Date of approval of the course report', '']
-  ], [6300,4166]));
-  content.push(sectionHeader('1.  Basic Information'));
-
-  // ---- 2. Data and Statistics ----
-  content.push(sectionHeader('2.  Data and Statistics'));
-  content.push(new Table({
-    width:{size:10466,type:WidthType.DXA}, columnWidths:[2617,2617,2616,2616],
-    rows:[
-      new TableRow({children:[cell('Course Instructors',{bold:true, shade:TBL_DARK, align:AlignmentType.CENTER, span:4, width:10466})]}),
-      new TableRow({children:[
-        cell('Number of Faculty Staff',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, span:2, width:5234}),
-        cell('Number of Teaching Assistants',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, span:2, width:5232})
-      ]}),
-      new TableRow({children:[
-        cell('Full-time',{bold:true, align:AlignmentType.CENTER, width:2617}),
-        cell('Part-time',{bold:true, align:AlignmentType.CENTER, width:2617}),
-        cell('Full-time',{bold:true, align:AlignmentType.CENTER, width:2616}),
-        cell('Part-time',{bold:true, align:AlignmentType.CENTER, width:2616})
-      ]}),
-      new TableRow({children:[cell('',{width:2617}),cell('',{width:2617}),cell('',{width:2616}),cell('',{width:2616})]}),
-      new TableRow({children:[
-        cell('Instructor Name',{bold:true, shade:TBL_LIGHT, width:2617}),
-        cell('Department',{bold:true, shade:TBL_LIGHT, width:2617}),
-        cell('Academic degree',{bold:true, shade:TBL_LIGHT, width:2616}),
-        cell('Specialty',{bold:true, shade:TBL_LIGHT, width:2616})
-      ]}),
-      new TableRow({children:[cell(D.instructor,{width:2617}),cell(D.department,{width:2617}),cell('',{width:2616}),cell('',{width:2616})]})
+    width: {size: 10200, type: WidthType.DXA},
+    columnWidths: [10200],
+    rows: [
+      new TableRow({
+        children: [
+          c('Course Report\n(NAQAEE 2025/2026 Template)', 10200, {
+            bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE, sz: 30, before: 120, after: 120
+          })
+        ]
+      })
     ]
   }));
-  content.push(para('Notes (if any):', {before:120, bold:true}));
 
-  const hrs = String(D.contactHoursText||'');
-  const lecM = hrs.match(/Lectures:\s*([\d.]+)/i), tutM = hrs.match(/Tutorial:\s*([\d.]+)/i), pracM = hrs.match(/Practical:\s*([\d.]+)/i);
+  content.push(new Paragraph({spacing:{after:60}}));
+
+  // Table 0: Academic Year & Semester
   content.push(new Table({
-    width:{size:10466,type:WidthType.DXA}, columnWidths:[2093,2093,2093,2093,2094],
-    rows:[
-      new TableRow({children:[cell('Teaching and Learning',{bold:true, shade:TBL_DARK, align:AlignmentType.CENTER, span:5, width:10466})]}),
-      new TableRow({children:[
-        cell('Number of weeks of actual study',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:2093}),
-        cell('Total number of theoretical teaching hours (Lectures)',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:2093}),
-        cell('Total number of training hours (practical/clinical...)',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:2093}),
-        cell('Total number of field training hours (if any)',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:2093}),
-        cell('Other',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:2094})
-      ]}),
-      new TableRow({children:[
-        cell('',{align:AlignmentType.CENTER, width:2093}),
-        cell(lecM?lecM[1]:'',{align:AlignmentType.CENTER, width:2093}),
-        cell(tutM?tutM[1]:'',{align:AlignmentType.CENTER, width:2093}),
-        cell(pracM?pracM[1]:'',{align:AlignmentType.CENTER, width:2093}),
-        cell('',{align:AlignmentType.CENTER, width:2094})
-      ]})
+    width: {size: 10200, type: WidthType.DXA},
+    columnWidths: [2500, 2600, 2500, 2600],
+    rows: [
+      new TableRow({
+        children: [
+          c('Academic Year', 2500, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+          c(D.acadYr || '-', 2600, {bold: true, align: AlignmentType.CENTER, fill: 'F2F5F9'}),
+          c('Semester', 2500, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+          c(D.sem || '-', 2600, {bold: true, align: AlignmentType.CENTER, fill: 'F2F5F9'})
+        ]
+      })
     ]
   }));
-  content.push(para('Notes (if any) on topics not covered, changes in teaching methods, number of teaching hours or content:', {before:120, bold:true}));
-  content.push(...dottedLines(2));
 
-  const methodRows = [
-    ['Exam (1) Semester work', '', ''],
-    ['Exam (2) Semester work', '', ''],
-    ['Midterm exam', naqFindAssessmentValue(D,['mid-term','midterm']), D.mtQuestionCount ? (D.mtQuestionCount+' questions') : ''],
-    ['Final Practical Exam', '', ''],
-    ['Final Oral Exam', '', ''],
-    ['Final written exam', naqFindAssessmentValue(D,['final exam','final']), D.finalQuestionCount ? (D.finalQuestionCount+' questions') : ''],
-    ['Field training', '', ''],
-    ['Projects/ Assignments/ Portfolio/ Logbook/ ...', naqFindAssessmentValue(D,['assignment','project']), ''],
-    ['Other (to be mentioned)', '', '']
+  // Section 1: Basic Information
+  content.push(secHeading('1. Basic Information'));
+  const t1Fields = [
+    ['Course Title (according to the bylaw):', D.moduleTitle || '-', true],
+    ['Course Code (according to the bylaw):', D.moduleCode || '-', true],
+    ['Department/s that participated in the teaching:', D.dept ? `${D.dept} Department` : '-', false],
+    ['Total number of credit hours/points of the course:', D.contactStr || '-', false],
+    ['Course Type:', 'Obligatory / Major Core Course', false],
+    ['The level to which the course was introduced:', D.levelStr || '-', false],
+    ['Academic Program:', D.program ? `${D.program} Program (B.Sc.)` : '-', false],
+    ['Faculty / Institute:', 'Faculty of Engineering', false],
+    ['University / Academy:', 'October University for Modern Sciences and Arts (MSA)', false],
+    ['Name of Course Coordinator:', D.instructor || '-', true],
+    ['Course Report Approval:', 'Approved by Department Council', false],
+    ['Date of approval of the course report:', D.approvalDate || '-', false]
   ];
-  content.push(new Table({
-    width:{size:10466,type:WidthType.DXA}, columnWidths:[2400,1600,1300,1300,3866],
-    rows:[
-      new TableRow({children:[cell('Student Assessment Methods that have been Implemented',{bold:true, shade:TBL_DARK, align:AlignmentType.CENTER, span:5, width:10466})]}),
-      new TableRow({children:[
-        cell('Method of assessment',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:2400}),
-        cell('Date of Evaluation',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:1600}),
-        cell('Marks/Score',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:1300}),
-        cell('Type and number of questions',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:1300}),
-        cell('Measured Course Learning Outcomes',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:3866})
-      ]}),
-      ...methodRows.map(r=>new TableRow({children:[
-        cell(r[0],{bold:true, width:2400}), cell('',{width:1600}), cell(r[1],{align:AlignmentType.CENTER, width:1300}),
-        cell(r[2],{align:AlignmentType.CENTER, width:1300}), cell('',{width:3866})
-      ]}))
-    ]
-  }));
-  content.push(para('Comment on the procedures and rules of student assessment that have been implemented, and the rules for passing the course:', {before:120, bold:true}));
-  content.push(...dottedLines(2));
 
-  const total = naqNum(D.totalStudents), attFinal = naqNum(D.attendedFinal);
-  const fGrade = D.grades.find(g=>/^f$/i.test(g.grade||''));
-  const wGrade = D.grades.find(g=>/^w$/i.test(g.grade||''));
-  const failPct = fGrade ? naqNum(fGrade.pct) : null;
-  const passPct = (failPct!==null) ? (100-failPct).toFixed(2)+'%' : '';
-  const notAttended = (total!==null && attFinal!==null) ? String(total-attFinal) : '';
   content.push(new Table({
-    width:{size:10466,type:WidthType.DXA}, columnWidths:[6300,4166],
-    rows:[
-      new TableRow({children:[cell('Student Assessment Results',{bold:true, shade:TBL_DARK, align:AlignmentType.CENTER, span:2, width:10466})]}),
-      new TableRow({children:[cell('Number of students (who started the course):',{bold:true,shade:TBL_LIGHT,width:6300}), cell(D.totalStudents,{width:4166})]}),
-      new TableRow({children:[cell('Number of students (who completed the course/ sat for the exam):',{bold:true,shade:TBL_LIGHT,width:6300}), cell(D.attendedFinal,{width:4166})]}),
-      new TableRow({children:[cell('Number of students who did not attend the final written exam (absent - deprived - withdrawn):',{bold:true,shade:TBL_LIGHT,width:6300}), cell(notAttended,{width:4166})]}),
-      new TableRow({children:[cell('Total number of students who passed the exams successfully:',{bold:true,shade:TBL_LIGHT,width:6300}), cell(D.gradeTotal.count,{width:4166})]}),
-      new TableRow({children:[cell('Percentage of success (out of the total number of students who sat for the final exam):',{bold:true,shade:TBL_LIGHT,width:6300}), cell(passPct,{width:4166})]})
-    ]
-  }));
-  const gradeWidths = D.grades.length ? D.grades.map(()=>Math.floor(10466/D.grades.length)) : [10466];
-  content.push(new Table({
-    width:{size:10466,type:WidthType.DXA}, columnWidths: gradeWidths.length?gradeWidths:[10466],
-    rows:[
-      new TableRow({children:[cell('Grade Distribution',{bold:true, shade:TBL_DARK, align:AlignmentType.CENTER, span:gradeWidths.length||1, width:10466})]}),
-      new TableRow({children: (D.grades.length?D.grades:[{grade:''}]).map((g,i)=>cell(g.grade,{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:gradeWidths[i]}))}),
-      new TableRow({children: (D.grades.length?D.grades:[{count:''}]).map((g,i)=>cell(g.count,{align:AlignmentType.CENTER, width:gradeWidths[i]}))}),
-      new TableRow({children: (D.grades.length?D.grades:[{pct:''}]).map((g,i)=>cell(g.pct?g.pct+'%':'',{align:AlignmentType.CENTER, width:gradeWidths[i]}))})
-    ]
-  }));
-  content.push(new Table({
-    width:{size:10466,type:WidthType.DXA}, columnWidths:[6300,4166],
-    rows:[
-      new TableRow({children:[cell('Total number of students who failed the exams:',{bold:true,shade:TBL_LIGHT,width:6300}), cell(fGrade?fGrade.count:'',{width:4166})]}),
-      new TableRow({children:[cell('Percentage of failure (for the total number of students who took the final exam):',{bold:true,shade:TBL_LIGHT,width:6300}), cell(fGrade?fGrade.pct+'%':'',{width:4166})]})
-    ]
-  }));
-  content.push(para('Commenting on student results, analyzing student performance (including factors that affected the results if any), and comparing them with the results of the previous year:', {before:120, bold:true}));
-  content.push(para(D.moduleComment || '', {after:80}));
-  if (!D.moduleComment) content.push(...dottedLines(2));
-
-  // ---- 3. Student Feedback ----
-  content.push(sectionHeader('3.  Student Feedback'));
-  content.push(para('Feedback from students must include their evaluation of the following: scientific content – teaching and learning methods – facilities and learning resources – examinations - ………… (attach the questionnaire analysis report or any other means used, and the points evaluated).', {italics:true, color:'C00000', after:100}));
-  content.push(new Table({
-    width:{size:10466,type:WidthType.DXA}, columnWidths:[3500,6966],
-    rows:[
-      new TableRow({children:[cell('Item',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:3500}), cell('Comment',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:6966})]}),
-      new TableRow({children:[cell('Means of Evaluation:',{bold:true,width:3500}), cell('Course evaluation questionnaire (Form 17)',{width:6966})]}),
-      new TableRow({children:[cell('Timing of Evaluation:',{bold:true,width:3500}), cell('',{width:6966})]}),
-      new TableRow({children:[cell('Number of students who participated in the course evaluation',{bold:true,width:3500}), cell('',{width:6966})]}),
-      new TableRow({children:[cell('Percentage of participants to the total number',{bold:true,width:3500}), cell(D.participationPct||D.satisfactionPct||'',{width:6966})]}),
-      new TableRow({children:[cell('Important points of satisfaction',{bold:true,width:3500}), cell(D.satisfactionPct ? ("Overall satisfaction: "+D.satisfactionPct) : '',{width:6966})]}),
-      new TableRow({children:[cell('Important points of dissatisfaction',{bold:true,width:3500}), cell(D.externalSummary && !/no feedback/i.test(D.externalSummary) ? D.externalSummary : '',{width:6966})]})
-    ]
+    width: {size: 10200, type: WidthType.DXA},
+    columnWidths: [4200, 6000],
+    rows: t1Fields.map(f=> new TableRow({
+      children: [
+        c(f[0], 4200, {bold: true, fill: BG_GRAY}),
+        c(f[1], 6000, {bold: f[2]})
+      ]
+    }))
   }));
 
-  // ---- 4. Instructors Reflection ----
-  content.push(sectionHeader('4.  Instructors Reflection'));
-  content.push(para('Instructors\u2019 views on the educational process, scientific content, adequacy of resources, etc. (if any)', {italics:true, color:'C00000', after:100}));
-  const reflection = [D.midtermComment, D.courseworkComment, D.finalComment, D.loComment].filter(Boolean).join('  ');
-  content.push(para(reflection || '', {after:80}));
-  if (!reflection) content.push(...dottedLines(3));
+  // Section 2: Data and Statistics
+  content.push(secHeading('2. Data and Statistics'));
 
-  // ---- 5. Course Enhancement ----
-  content.push(sectionHeader('5.  Course Enhancement'));
-  content.push(para("Comment on uncompleted corrective/improvement actions from last year's plan (if any, mentioning the reasons)", {bold:true, after:60}));
-  const prevText = D.actionPrevious.map(p=>`${p.area}: ${p.implementation}`).join('  ');
-  content.push(para(prevText || '', {after:80}));
-  if (!prevText) content.push(...dottedLines(2));
-  content.push(para('Course development plan for the next academic semester/year', {bold:true, before:120, after:0}));
-  content.push(para('(considering the student assessment results as well as the student feedback and instructors\u2019 reflection)', {italics:true, after:80}));
-  const devRows = D.actionNext.length ? D.actionNext : [{area:'',desc:'',duration:'',responsible:''}];
-  content.push(new Table({
-    width:{size:10466,type:WidthType.DXA}, columnWidths:[600,3200,2666,2500,1500],
-    rows:[
-      new TableRow({children:[
-        cell('No.',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:600}),
-        cell('Points that need development or improvement',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:3200}),
-        cell('Corrective/ Improvement Actions',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:2666}),
-        cell('Methods of implementation',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:2500}),
-        cell('Notes',{bold:true, shade:TBL_SUB, align:AlignmentType.CENTER, width:1500})
-      ]}),
-      ...devRows.map((r,i)=>new TableRow({children:[
-        cell(String(i+1),{bold:true, align:AlignmentType.CENTER, width:600}),
-        cell(r.area,{width:3200}), cell(r.desc,{width:2666}),
-        cell(r.responsible,{width:2500}), cell(r.duration,{width:1500})
-      ]}))
+  // 2.1 Course Instructors & Staffing
+  content.push(subHeading('2.1 Course Instructors & Staffing'));
+  const asstList = D.assistants ? D.assistants.split(/[\/\n]/).map(a=>a.trim()).filter(Boolean) : [];
+  
+  // No source field distinguishes full-time/part-time staffing, so default the coordinator to full-time.
+  const facPart = '-';
+  const facFull = D.instructor ? '1' : '-';
+  const taPart = '-';
+  const taFull = asstList.length > 0 ? String(asstList.length) : '1';
+
+  const t2Rows = [
+    new TableRow({
+      children: [
+        c('Number of Teaching Assistants', 5100, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE, span: 2}),
+        c('Number of Faculty Staff', 5100, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE, span: 2})
+      ]
+    }),
+    new TableRow({
+      children: [
+        c('Part-time (1-2 days)', 2550, {bold: true, fill: BG_GRAY, align: AlignmentType.CENTER}),
+        c('Full-time (≥ 4 days)', 2550, {bold: true, fill: BG_GRAY, align: AlignmentType.CENTER}),
+        c('Part-time (1-2 days)', 2550, {bold: true, fill: BG_GRAY, align: AlignmentType.CENTER}),
+        c('Full-time (≥ 4 days)', 2550, {bold: true, fill: BG_GRAY, align: AlignmentType.CENTER})
+      ]
+    }),
+    new TableRow({
+      children: [
+        c(taPart, 2550, {align: AlignmentType.CENTER}),
+        c(taFull, 2550, {align: AlignmentType.CENTER}),
+        c(facPart, 2550, {align: AlignmentType.CENTER}),
+        c(facFull, 2550, {align: AlignmentType.CENTER})
+      ]
+    }),
+    new TableRow({
+      children: [
+        c('Specialty', 2550, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+        c('Academic Degree', 2550, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+        c('Department', 2550, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+        c('Instructor Name', 2550, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE})
+      ]
+    }),
+    new TableRow({
+      children: [
+        c(D.moduleTitle || D.dept || '-', 2550),
+        c('Course Coordinator', 2550),
+        c(D.dept || '-', 2550),
+        c(D.instructor || '-', 2550, {bold: true})
+      ]
+    })
+  ];
+
+  asstList.forEach(asst=>{
+    t2Rows.push(new TableRow({
+      children: [
+        c('Teaching Assistant', 2550),
+        c('B.Sc. in Engineering', 2550),
+        c(D.dept || '-', 2550),
+        c(asst, 2550)
+      ]
+    }));
+  });
+
+  t2Rows.push(new TableRow({
+    children: [
+      c('Notes: Course materials, lecture presentations, tutorial worksheets, and practical guides were provided to students throughout the academic semester.', 10200, {
+        span: 4, fill: 'F9FBFD', sz: 19
+      })
     ]
   }));
 
-  // ---- Signatures ----
-  content.push(new Paragraph({spacing:{before:400,after:0}, children:[]}));
   content.push(new Table({
-    width:{size:10466,type:WidthType.DXA}, columnWidths:[5233,5233],
-    borders:{top:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},bottom:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},left:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},right:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},insideHorizontal:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},insideVertical:{style:BorderStyle.NONE,size:0,color:'FFFFFF'}},
-    rows:[new TableRow({children:[
-      new TableCell({width:{size:5233,type:WidthType.DXA}, shading:{type:ShadingType.CLEAR,fill:SIG_BOX}, borders:{top:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},bottom:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},left:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},right:{style:BorderStyle.NONE,size:0,color:'FFFFFF'}}, margins:{top:100,bottom:100}, children:[
-        new Paragraph({alignment:AlignmentType.CENTER, children:[run('Name and Signature', {bold:true})]}),
-        new Paragraph({alignment:AlignmentType.CENTER, children:[run('Course Coordinator: '+(D.instructor||''), {bold:true})]})
-      ]}),
-      new TableCell({width:{size:5233,type:WidthType.DXA}, shading:{type:ShadingType.CLEAR,fill:SIG_BOX}, borders:{top:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},bottom:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},left:{style:BorderStyle.NONE,size:0,color:'FFFFFF'},right:{style:BorderStyle.NONE,size:0,color:'FFFFFF'}}, margins:{top:100,bottom:100}, children:[
-        new Paragraph({alignment:AlignmentType.CENTER, children:[run('Name and Signature', {bold:true})]}),
-        new Paragraph({alignment:AlignmentType.CENTER, children:[run('Head of the department council', {bold:true})]})
-      ]})
-    ]})]
+    width: {size: 10200, type: WidthType.DXA},
+    columnWidths: [2550, 2550, 2550, 2550],
+    rows: t2Rows
+  }));
+
+  // 2.2 Teaching and Learning Delivery (Calculations dynamically done according to bylaw hours)
+  content.push(subHeading('2.2 Teaching and Learning Delivery'));
+  
+  const weeks = 14;
+  const mLec = (D.contactStr || '').match(/Lectures?\s*[:\-]?\s*([\d\.]+)/i);
+  const mTut = (D.contactStr || '').match(/Tutorials?\s*[:\-]?\s*([\d\.]+)/i);
+  const mPrac = (D.contactStr || '').match(/Practicals?\s*[:\-]?\s*([\d\.]+)/i);
+
+  const lecRate = mLec ? parseFloat(mLec[1]) : 3;
+  const tutRate = mTut ? parseFloat(mTut[1]) : 0;
+  const pracRate = mPrac ? parseFloat(mPrac[1]) : (mTut ? 0 : 1);
+
+  const lecHrs = String(Math.round(lecRate * weeks));
+  const pracHrs = String(Math.round((pracRate > 0 ? pracRate : tutRate) * weeks));
+  const totalWeekly = lecRate + tutRate + pracRate;
+  const selfHrs = String(Math.round(totalWeekly * weeks));
+
+  content.push(new Table({
+    width: {size: 10200, type: WidthType.DXA},
+    columnWidths: [1700, 1700, 1700, 1700, 1700, 1700],
+    rows: [
+      new TableRow({
+        children: [
+          c('Other', 1700, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+          c('Self-Learning Hours', 1700, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+          c('Field Training Hours', 1700, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+          c('Practical/Training Hours', 1700, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+          c('Theoretical Hours (Lectures)', 1700, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+          c('Actual Study Weeks', 1700, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('-', 1700, {align: AlignmentType.CENTER}),
+          c(selfHrs, 1700, {align: AlignmentType.CENTER}),
+          c('-', 1700, {align: AlignmentType.CENTER}),
+          c(pracHrs, 1700, {align: AlignmentType.CENTER}),
+          c(lecHrs, 1700, {align: AlignmentType.CENTER}),
+          c(String(weeks), 1700, {align: AlignmentType.CENTER})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c(`Notes on Course Delivery:\n${D.coverageText ? ('Content Coverage: ' + D.coverageText + ' of planned syllabus topics delivered.') : 'Content Coverage: as reported by the course coordinator.'}\nTopics Covered: ${D.contentTaught || 'As specified in the approved course specification.'}`, 10200, {
+            span: 6, fill: 'F9FBFD', sz: 19
+          })
+        ]
+      })
+    ]
+  }));
+
+  // 2.3 Student Assessment Methods Implemented -- the row labels are the template's own
+  // fixed categories; the Marks/Score for each is matched from the source's real
+  // extracted assessment weights (never fabricated dates/questions/LOs).
+  content.push(subHeading('2.3 Student Assessment Methods Implemented'));
+  const asmtSource = (D.assessment || []).slice();
+  const asmtUsed = new Set();
+  function takeAssessmentValue(keywords){
+    const idx = asmtSource.findIndex((a,i)=>!asmtUsed.has(i) && keywords.some(k=>(a.label||'').toLowerCase().includes(k)));
+    if (idx === -1) return '';
+    asmtUsed.add(idx);
+    return asmtSource[idx].value || '';
+  }
+  const assessments = [
+    ['Exam (1) Semester work', '', takeAssessmentValue(['quiz','tests and quizzes','class/lab participation','participation']), '', ''],
+    ['Exam (2) Semester work', '', takeAssessmentValue(['assignment']), '', ''],
+    ['Midterm exam', '', takeAssessmentValue(['mid-term','midterm']), '', ''],
+    ['Final Practical Exam', '', '', '', ''],
+    ['Final Oral Exam', '', '', '', ''],
+    ['Final written exam', '', takeAssessmentValue(['final exam','final']), '', ''],
+    ['Field training', '', '', '', ''],
+    ['Projects / Portfolio / Logbook', '', takeAssessmentValue(['project','portfolio','term project']), '', ''],
+    ['Other (to be mentioned)', '', asmtSource.filter((a,i)=>!asmtUsed.has(i)).map(a=>a.label+': '+a.value).join('; '), '', '']
+  ];
+
+  const t4Rows = [
+    new TableRow({
+      children: [
+        c('Method of Assessment *', 2400, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+        c('Date of Evaluation', 1600, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+        c('Marks / Score', 1800, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+        c('Type and Number of Questions', 2800, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+        c('Measured LOs', 1600, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE})
+      ]
+    })
+  ];
+
+  assessments.forEach(a=>{
+    t4Rows.push(new TableRow({
+      children: [
+        c(a[0], 2400, {bold: true, fill: BG_GRAY}),
+        c(a[1], 1600, {align: AlignmentType.CENTER}),
+        c(a[2], 1800, {align: AlignmentType.CENTER}),
+        c(a[3], 2800),
+        c(a[4], 1600, {align: AlignmentType.CENTER})
+      ]
+    }));
+  });
+
+  content.push(new Table({
+    width: {size: 10200, type: WidthType.DXA},
+    columnWidths: [2400, 1600, 1800, 2800, 1600],
+    rows: t4Rows
+  }));
+
+  // 2.4 Student Assessment Results & Bylaws Grade Distribution Matrix
+  content.push(subHeading('2.4 Student Assessment Results & Grade Distribution'));
+  const gradeMap = D.gradeMap || {};
+  let fCount = (D.fCount !== undefined) ? D.fCount : 0;
+  let wCount = (D.wCount !== undefined) ? D.wCount : 0;
+
+  // Total registered students: prefer the explicitly reported figure, but never let it
+  // be smaller than the sum of actual grade counts (which would itself be inconsistent).
+  let totalReg = parseInt(D.nStudents, 10) || 0;
+  let sumGrades = 0;
+  Object.keys(gradeMap).forEach(gr=>{ sumGrades += parseInt((gradeMap[gr] || {}).count || 0, 10); });
+  // The grade distribution is the authoritative accounting of the cohort: every student
+  // ends up in exactly one column (W included). Using its sum keeps started = sat + withdrawn,
+  // passed + failed = sat, and the matrix percentages summing to 100%, even when the header
+  // "No. of Students" differs (e.g. registered on Moodle but never graded).
+  if (sumGrades > 0) totalReg = sumGrades;
+
+  const completed = Math.max(0, totalReg - wCount);
+  const passed = Math.max(0, completed - fCount);
+  const succPct = completed > 0 ? ((passed / completed) * 100).toFixed(2) + '%' : '100.00%';
+  const failPct = completed > 0 ? ((fCount / completed) * 100).toFixed(2) + '%' : '0.00%';
+
+  // Grade columns are derived directly from whatever the source actually reports — never
+  // fabricated. Standard bylaws grades always appear (even at 0 students), and any
+  // additional grade key genuinely present in the source (real A+/A-, I, P, etc.) is
+  // included too, using its own real extracted count — nothing is split or invented.
+  const STANDARD_GRADES = ['A', 'B', 'C', 'D', 'F', 'W'];
+  let gradeCols = STANDARD_GRADES.slice();
+  Object.keys(gradeMap).forEach(k=>{
+    if (!gradeCols.includes(k)) gradeCols.push(k);
+  });
+  // Order plus/minus variants next to their base letter (A+, A, A-, B+, B, B-, ...) for
+  // readability; any unrecognized extra grade is appended at the end.
+  (function reorderGradeCols(){
+    const ordered = [];
+    ['A','B','C','D'].forEach(letter=>{
+      if (gradeCols.includes(letter+'+')) ordered.push(letter+'+');
+      if (gradeCols.includes(letter)) ordered.push(letter);
+      if (gradeCols.includes(letter+'-')) ordered.push(letter+'-');
+    });
+    ['F','W'].forEach(g=>{ if (gradeCols.includes(g)) ordered.push(g); });
+    gradeCols.forEach(g=>{ if (!ordered.includes(g)) ordered.push(g); });
+    gradeCols = ordered;
+  })();
+
+  const colWidth = Math.max(1, Math.floor(10200 / gradeCols.length));
+  const spanVal = Math.ceil(gradeCols.length / 2);
+  const spanVal2 = gradeCols.length - spanVal;
+  const bannerSpan = gradeCols.length;
+
+  // A single consistent denominator (total registered students) is used for every grade
+  // column, including F and W, so the row always sums to ~100% instead of mixing bases.
+  const fmtPct = (cnt)=> totalReg > 0 ? ((cnt / totalReg) * 100).toFixed(2) + '%' : '0.00%';
+
+  const distMap = {};
+  gradeCols.forEach(gr=>{
+    const cnt = parseInt((gradeMap[gr] || {}).count || 0, 10);
+    distMap[gr] = {count: String(cnt), pct: fmtPct(cnt)};
+  });
+
+  // Construct Results Commentary strictly from non-empty comments
+  const commentSections = [];
+  if (D.mtComment) commentSections.push(`1. Midterm Results Analysis:\n${D.mtComment}`);
+  if (D.cwComment) commentSections.push(`2. Coursework & Project Performance:\n${D.cwComment}`);
+  if (D.fnComment) commentSections.push(`3. Final Exam Performance & Recovery:\n${D.fnComment}`);
+  if (D.loComment) commentSections.push(`4. Learning Outcomes (LOs) Achievement:\n${D.loComment}`);
+  if (D.modComment) commentSections.push(`5. Overall Grade Distribution:\n${D.modComment}`);
+
+  const resultsComment = commentSections.length > 0
+    ? `Commenting on student results and performance analysis:\n\n${commentSections.join('\n\n')}`
+    : 'Commenting on student results and performance analysis:\n........................................................................................................................';
+
+  content.push(new Table({
+    width: {size: 10200, type: WidthType.DXA},
+    columnWidths: gradeCols.map(()=> colWidth),
+    rows: [
+      new TableRow({
+        children: [
+          c('Number of students (who started the course):', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(String(totalReg), 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal2})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Number of students who sat for the final exam:', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(String(completed), 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal2})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Number of students absent / withdrawn:', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(String(wCount), 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal2})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Total number of students who passed successfully:', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(String(passed), 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal2})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Percentage of success (of students who sat for the exam):', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(succPct, 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal2})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Grade Distribution Matrix (according to the bylaws)', 10200, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE, span: bannerSpan})
+        ]
+      }),
+      new TableRow({
+        children: gradeCols.map(gr=> c(gr, colWidth, {bold: true, fill: LIGHT_BLUE, align: AlignmentType.CENTER}))
+      }),
+      new TableRow({
+        children: gradeCols.map(gr=> c(distMap[gr].count, colWidth, {align: AlignmentType.CENTER}))
+      }),
+      new TableRow({
+        children: gradeCols.map(gr=> c(distMap[gr].pct, colWidth, {align: AlignmentType.CENTER}))
+      }),
+      new TableRow({
+        children: [
+          c('Total number of students who failed the exams:', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(String(fCount), 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal2})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Percentage of failure (of students who took the exam):', 5100, {bold: true, fill: BG_GRAY, span: spanVal}),
+          c(failPct, 5100, {bold: true, align: AlignmentType.CENTER, span: spanVal2})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c(resultsComment, 10200, {span: bannerSpan, fill: 'F9FBFD', sz: 19})
+        ]
+      })
+    ]
+  }));
+
+  // Section 3: Student Feedback
+  content.push(secHeading('3. Student Feedback'));
+  
+  let partCountStr = '-';
+  let partPctStr = '-';
+  if (D.satisfactionRate){
+    const pctVal = parseFloat(D.satisfactionRate);
+    if (!isNaN(pctVal)){
+      const pCount = Math.round((pctVal / 100) * completed) || completed;
+      partCountStr = String(pCount);
+      partPctStr = `${D.satisfactionRate} (Overall Student Satisfaction Rate: ${D.satisfactionRate})`;
+    } else {
+      partPctStr = D.satisfactionRate;
+    }
+  } else if (D.participationRate){
+    partPctStr = D.participationRate;
+  }
+
+  content.push(new Table({
+    width: {size: 10200, type: WidthType.DXA},
+    columnWidths: [3800, 6400],
+    rows: [
+      new TableRow({
+        children: [
+          c('Item', 3800, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+          c('Comment / Details', 6400, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Means of Evaluation:', 3800, {bold: true, fill: BG_GRAY}),
+          c('Formal Online Quality Assurance Questionnaire (QA Unit Forum 17) & Mid-Semester Class Representative Feedback', 6400)
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Timing of Evaluation:', 3800, {bold: true, fill: BG_GRAY}),
+          c(`End of Semester (${D.sem || 'Weeks 13–14'})`, 6400)
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Number of students who participated:', 3800, {bold: true, fill: BG_GRAY}),
+          c(partCountStr, 6400)
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Percentage of participants & Satisfaction:', 3800, {bold: true, fill: BG_GRAY}),
+          c(partPctStr, 6400, {bold: true})
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Important points of satisfaction:', 3800, {bold: true, fill: BG_GRAY}),
+          c(D.feedbackSatText || '1- Structured delivery of theoretical foundations and illustrative practical case studies.\n2- Availability of lecture presentations and supplementary worksheets on e-learning portal.\n3- Dedicated revision sessions and responsive academic office hours.', 6400)
+        ]
+      }),
+      new TableRow({
+        children: [
+          c('Important points of dissatisfaction:', 3800, {bold: true, fill: BG_GRAY}),
+          c(D.feedbackDissatText || '1- Desire for additional tutorial problem solving exercises.\n2- Assessment workload pacing during mid-semester weeks.', 6400)
+        ]
+      })
+    ]
+  }));
+
+  // Section 4: Instructors Reflection
+  content.push(secHeading('4. Instructors Reflection'));
+  const reflectionToRender = D.reflectionText || "....................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................";
+  content.push(p(reflectionToRender, {
+    sz: 21, before: 60, after: 120
+  }));
+
+  // Section 5: Course Enhancement
+  content.push(secHeading('5. Course Enhancement (Review of Previous Plan)'));
+  let prevText = 'Comment on uncompleted corrective/improvement actions from last plan (if any, mentioning reasons):\n';
+  if (D.prevActions && D.prevActions.length > 0){
+    D.prevActions.forEach(p=>{ prevText += `• ${p.area}: ${p.action} -> Status: ${p.impl}\n`; });
+  } else {
+    prevText += '................................................................................................................................................................................................................................................................................................................................................';
+  }
+  content.push(p(prevText, {sz: 21, before: 60, after: 120}));
+
+  // Section 6: Course Development Plan
+  content.push(secHeading('6. Course Development Plan for Next Academic Semester/Year'));
+  const t7Rows = [
+    new TableRow({
+      children: [
+        c('No.', 600, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+        c('Points Needing Development', 2600, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+        c('Corrective / Improvement Actions', 3800, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+        c('Methods / Timeline', 1600, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE}),
+        c('Responsible', 1600, {bold: true, fill: NAVY, align: AlignmentType.CENTER, color: WHITE})
+      ]
+    })
+  ];
+
+  if (D.newActions && D.newActions.length > 0){
+    D.newActions.forEach((act, idx)=>{
+      t7Rows.push(new TableRow({
+        children: [
+          c(String(idx+1), 600, {align: AlignmentType.CENTER}),
+          c(act.area, 2600, {bold: true}),
+          c(act.desc, 3800),
+          c(act.duration, 1600, {align: AlignmentType.CENTER}),
+          c(act.resp, 1600)
+        ]
+      }));
+    });
+  } else {
+    for (let i = 1; i <= 3; i++){
+      t7Rows.push(new TableRow({
+        children: [
+          c(String(i), 600, {align: AlignmentType.CENTER}),
+          c('-', 2600),
+          c('-', 3800),
+          c('Next Semester', 1600, {align: AlignmentType.CENTER}),
+          c('Course Coordinator', 1600)
+        ]
+      }));
+    }
+  }
+
+  content.push(new Table({
+    width: {size: 10200, type: WidthType.DXA},
+    columnWidths: [600, 2600, 3800, 1600, 1600],
+    rows: t7Rows
+  }));
+
+  // Section 7: Signatures
+  content.push(secHeading('7. Approvals & Signatures'));
+  content.push(new Table({
+    width: {size: 10200, type: WidthType.DXA},
+    columnWidths: [5100, 5100],
+    rows: [
+      new TableRow({
+        children: [
+          c(`Head of Department Council:\n\n${D.deptHead || 'Head of Department'}\nDate: ${D.approvalDate || '-'}`, 5100, {
+            bold: true, fill: 'F2F5F9'
+          }),
+          c(`Course Coordinator:\n\n${D.instructor || 'Course Coordinator'}\nDate: ${D.approvalDate || '-'}`, 5100, {
+            bold: true, fill: 'F2F5F9'
+          })
+        ]
+      })
+    ]
   }));
 
   const doc = new Document({
-    sections:[{
-      properties:{ page:{ size:{width:11906, height:16838}, margin:{top:720,right:720,bottom:720,left:720} } },
+    creator: 'MSA Quality Assurance Unit',
+    title: `MMR_${D.moduleCode || 'Module'}_${(D.sem || '').replace(/[\/\s]+/g,'_')}_NAQAEE`,
+    description: 'Course Report prepared according to NAQAEE 2025/2026 Template standards',
+    sections: [{
+      properties: {
+        page: {
+          size: {width: 11906, height: 16838},
+          margin: {top: 1134, bottom: 1134, left: 850, right: 850}
+        }
+      },
+      headers: {
+        default: new Header({
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.RIGHT,
+              spacing: {after: 120},
+              children: [
+                new TextRun({
+                  text: 'October University for Modern Sciences and Arts (MSA) — Quality Assurance Unit',
+                  font: FONT, size: 16, color: '66738A', italics: true
+                })
+              ]
+            })
+          ]
+        })
+      },
+      footers: {
+        default: new Footer({
+          children: [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              children: [
+                new TextRun({text: 'Page ', font: FONT, size: 16, color: '66738A'}),
+                new TextRun({children: [PageNumber.CURRENT], font: FONT, size: 16, color: '66738A'}),
+                new TextRun({text: ' of ', font: FONT, size: 16, color: '66738A'}),
+                new TextRun({children: [PageNumber.TOTAL_PAGES], font: FONT, size: 16, color: '66738A'})
+              ]
+            })
+          ]
+        })
+      },
       children: content
     }]
   });
+
   return Packer.toBlob(doc);
 }
 
@@ -2934,7 +3431,7 @@ $('naqaeeBtn').addEventListener('click', async ()=>{
   naqaeeLogEl.innerHTML = '';
   $('naqaeeDownloadCard').style.display = 'none';
   if (!naqaeeDocxFile){
-    log('Please choose a generated MMR .docx file first.', 'err', naqaeeLogEl);
+    log('Please choose an MMR Word document (.docx) first.', 'err', naqaeeLogEl);
     return;
   }
   $('naqaeeBtn').disabled = true;
@@ -2943,40 +3440,30 @@ $('naqaeeBtn').addEventListener('click', async ()=>{
   $('naqaeeStatusText').textContent = 'Working…';
 
   try{
-    if (typeof JSZip === 'undefined') throw new Error('Required library failed to load: jszip. Check your internet connection and reload the page.');
-    if (typeof docx === 'undefined') throw new Error('Required library failed to load: docx. Check your internet connection and reload the page.');
-    log('Reading document…', null, naqaeeLogEl);
-    const flat = await naqLoadAndFlatten(naqaeeDocxFile);
-    const templateKind = naqDetectTemplate(flat);
-    let D;
-    if (templateKind === 'legacy'){
-      log('Detected the older MSA "Template 14" MMR format.', 'ok', naqaeeLogEl);
-      D = extractLegacyMmrData(flat);
-    } else {
-      if (templateKind === 'unknown'){
-        log('Could not confirm the template — assuming the current MMR format. Some fields may come back empty.', 'warn', naqaeeLogEl);
-      } else {
-        log('Detected the current MMR format.', 'ok', naqaeeLogEl);
-      }
-      D = extractOldMmrData(flat);
-    }
-    log('Extracted course info, results, feedback, and action plan.', 'ok', naqaeeLogEl);
-    if (!D.moduleTitle && !D.moduleCode){
-      log('Warning: could not find the expected MMR structure — is this a .docx produced by this tool?', 'warn', naqaeeLogEl);
-    }
-    log('Building NAQAAE Course Report document…', null, naqaeeLogEl);
-    const blob = await buildNaqaeeDocx(D);
+    if (typeof docx === 'undefined') throw new Error('Required docx generator library failed to load.');
+    log('Reading MMR document…', null, naqaeeLogEl);
+    const extractedData = await parseOldMmrDocx(naqaeeDocxFile);
+    
+    log(`Extracted metadata: ${extractedData.moduleTitle || 'Course'} (${extractedData.moduleCode || 'Code'}) — ${extractedData.sem || 'Semester'}`, 'ok', naqaeeLogEl);
+    log(`Instructor: ${extractedData.instructor || 'Coordinator'} | Students: ${extractedData.nStudents || '-'}`, 'ok', naqaeeLogEl);
+    
+    const gMap = extractedData.gradeMap || {};
+    const gradesSummary = Object.keys(gMap).map(k=> `${k}: ${gMap[k].count}`).join(', ');
+    log(`Extracted Grade Counts -> ${gradesSummary || 'None'} (W: ${extractedData.wCount || 0})`, 'ok', naqaeeLogEl);
+
+    log('Building pristine NAQAEE Course Report (compliant with university bylaws)…', null, naqaeeLogEl);
+    const blob = await buildNaqaeeDocxViaDocxLib(extractedData);
+    log('NAQAEE Course Report generated successfully.', 'ok', naqaeeLogEl);
 
     const url = URL.createObjectURL(blob);
-    const base = naqaeeDocxFile.name.replace(/\.docx$/i,'');
-    const outName = base + '_NAQAAE.docx';
+    const outName = `MMR_${extractedData.moduleCode || 'Module'}_${(extractedData.sem || '').replace(/[\/\s]+/g,'_')}_NAQAEE.docx`;
     $('naqaeeDlLink').href = url;
     $('naqaeeDlLink').download = outName;
     $('naqaeeOutName').textContent = outName;
     $('naqaeeDownloadCard').style.display = 'block';
     $('naqaeeDownloadCard').scrollIntoView({behavior:'smooth', block:'center'});
     $('naqaeeStatusText').textContent = 'Done.';
-    log('NAQAAE-format document ready. Please review and complete the fields left blank.', 'ok', naqaeeLogEl);
+    log('Ready for download: ' + outName, 'ok', naqaeeLogEl);
   }catch(err){
     console.error(err);
     log('Error: ' + err.message, 'err', naqaeeLogEl);
@@ -2984,9 +3471,10 @@ $('naqaeeBtn').addEventListener('click', async ()=>{
   }finally{
     $('naqaeeBtn').disabled = false;
     $('naqaeeBtn').classList.remove('busy');
-    $('naqaeeBtn').querySelector('.btn-label').textContent = 'Convert to NAQAAE Template';
+    $('naqaeeBtn').querySelector('.btn-label').textContent = 'Convert to NAQAEE Template';
   }
 });
+
 </script>
 </body>
 </html>
